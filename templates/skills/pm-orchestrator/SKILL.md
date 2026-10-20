@@ -7,30 +7,33 @@ description: >-
 
 # CraftXTech PM Orchestrator Workflow
 
-## Phase 1: Interactive Brainstorming
-1. Greet the user and elicit the core product vision.
-2. Ask 3-5 focused questions about:
+## Phase 1: Interactive Brainstorming & Feature Slug Assignment
+1. Elicit requirements from the user.
+2. Determine a unique, lowercase kebab-case identifier for this feature (e.g. `feat-booking`, `feat-avatar`).
+3. Ensure the dedicated folder exists: `.agents/features/<feature-slug>/`.
+4. Ask 3-5 focused questions about:
    - Target personas & main user journey.
    - Core MVP requirements vs secondary features.
    - Design guidelines (color theme, tone, target screen sizes).
-3. Synthesize the findings into `.agents/01_PRD.md`.
-4. Update `.agents/STATE.json` with `phase: "AWAITING_ROUTING"`.
+5. Synthesize into `.agents/features/<feature-slug>/01_PRD.md`.
+6. Initialize or update `.agents/features/<feature-slug>/STATE.json` with `phase: "AWAITING_ROUTING"`.
+7. Update root `.agents/STATE.json` to register this feature in `active_features`.
 
-## Phase 2: Routing Decision
+## Phase 2: Routing Decision & Physical Isolation
+- **Physical Safety Rule:** Do NOT run `git checkout` to hop between branches if other chats or tools are actively operating in this workspace. Stay on the active working tree and rely on folder isolation: `src/features/<feature-slug>/`.
 - **If Level 3 (Complex Web/App UI):**
-  - Generate `.agents/HANDOFF_TO_ASTRA.md`.
-  - Update `.agents/STATE.json` (`phase: "AWAITING_ASTRA"`).
-  - Git commit with message `[AG-PM] feat(prd): update PRD for <feature>`.
-  - Notify user: *"PRD đã được commit. Hãy mở thread Codex Astra gõ /next để lấy UI Spec."*
+  - Generate `.agents/features/<feature-slug>/HANDOFF_TO_ASTRA.md`.
+  - Update `.agents/features/<feature-slug>/STATE.json` (`phase: "AWAITING_ASTRA"`).
+  - Git commit with message `[AG-PM](<feature-slug>): update PRD`.
+  - Notify user: *"PRD cho feature `<feature-slug>` đã được lưu. Hãy mở thread Codex Astra gõ /next để lấy UI Spec."*
 - **If Level 1 (Local Gemini Execution):**
-  - Draft `.agents/02_UI_SPEC.md` and `.agents/03_TASKS.md` immediately.
+  - Draft `.agents/features/<feature-slug>/02_UI_SPEC.md` and `.agents/features/<feature-slug>/03_TASKS.md` directly.
   - Proceed straight to Phase 3.
 
 ## Phase 3: Autonomous Implementation & Testing
-1. Iterate through `.agents/03_TASKS.md`:
-   - Invoke `developer` subagent to write clean, typed code.
+1. Iterate through `.agents/features/<feature-slug>/03_TASKS.md`:
+   - Invoke `developer` subagent, instructing it strictly to confine code to `src/features/<feature-slug>/` or dedicated components.
 2. Invoke `qa_verifier` subagent:
    - Run typecheck, lint, and build commands.
-   - Automatically remediate import or minor syntax errors.
    - If tests fail, feed back to `developer`.
-3. When verified, update `.agents/STATE.json` (`phase: "COMPLETED"`) and commit with `[AG-QA] test: pass build and verification`.
+3. When verified, update `.agents/features/<feature-slug>/STATE.json` (`phase: "COMPLETED"`) and commit with `[AG-QA](<feature-slug>): pass build and verification`.

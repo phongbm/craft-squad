@@ -1,14 +1,13 @@
 {
   "project_name": "MyProject",
-  "feature": "initial-setup",
-  "branch": "main",
-  "phase": "IDLE",
-  "last_actor": "system",
-  "updated_at": "2026-10-20T12:00:00Z",
+  "active_branch": "main",
   "notification_channel": "craftxtech-alerts",
-  "artifacts": {
-    "prd": ".agents/01_PRD.md",
-    "ui_spec": ".agents/02_UI_SPEC.md",
-    "tasks": ".agents/03_TASKS.md"
+  "active_features": {
+    "sample-feature": {
+      "phase": "IDLE",
+      "last_actor": "system",
+      "folder": ".agents/features/sample-feature",
+      "updated_at": "2026-10-20T12:00:00Z"
+    }
   }
 }
