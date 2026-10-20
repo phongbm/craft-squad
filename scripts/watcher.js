@@ -3,7 +3,7 @@
 /**
  * CraftSquad File Watcher
  * Automatically monitors handoff files in .agents/ (including recursive multi-feature subdirectories)
- * and detects when Codex or PM updates specifications.
+ * and detects when Codex or PM updates specifications or task plans.
  */
 
 const fs = require('fs');
@@ -35,10 +35,10 @@ function saveState(filePath, state) {
 }
 
 function sendPushNotification(message, channel) {
-  if (!channel) return;
+  const targetChannel = channel || 'craftsquad-alerts';
   const postData = message;
   const req = https.request(
-    `https://ntfy.sh/${channel}`,
+    `https://ntfy.sh/${targetChannel}`,
     {
       method: 'POST',
       headers: {
@@ -65,7 +65,7 @@ try {
     const normalizedPath = rawFilename.replace(/\\/g, '/');
     const baseName = path.basename(normalizedPath);
 
-    if (baseName !== '02_UI_SPEC.md' && baseName !== '01_PRD.md') return;
+    if (baseName !== '02_UI_SPEC.md' && baseName !== '01_PRD.md' && baseName !== '03_TASKS.md') return;
 
     if (debounceTimeout) clearTimeout(debounceTimeout);
 
@@ -83,14 +83,14 @@ try {
       }
 
       const rootState = loadState(stateFile);
-      const notifyChannel = rootState.notification_channel || '';
+      const notifyChannel = rootState.notification_channel || 'craftsquad-alerts';
       const nowIso = new Date().toISOString();
 
-      if (baseName === '02_UI_SPEC.md') {
+      if (baseName === '02_UI_SPEC.md' || baseName === '03_TASKS.md') {
         if (!rootState.active_features) rootState.active_features = {};
         if (!rootState.active_features[slug]) rootState.active_features[slug] = {};
         rootState.active_features[slug].phase = 'AWAITING_DEV';
-        rootState.active_features[slug].last_actor = 'codex_astra';
+        rootState.active_features[slug].last_actor = baseName === '02_UI_SPEC.md' ? 'codex_astra' : 'codex_planner';
         rootState.active_features[slug].updated_at = nowIso;
         saveState(stateFile, rootState);
 
@@ -98,19 +98,19 @@ try {
         if (fs.existsSync(path.dirname(featureStatePath))) {
           const featState = loadState(featureStatePath);
           featState.phase = 'AWAITING_DEV';
-          featState.last_actor = 'codex_astra';
+          featState.last_actor = rootState.active_features[slug].last_actor;
           featState.updated_at = nowIso;
           saveState(featureStatePath, featState);
         }
 
-        console.log(`\n⚡ [WATCHER]: Detected UI Spec update for [${slug}] by Codex!`);
+        console.log(`\n⚡ [WATCHER]: Detected ${baseName} update for [${slug}]!`);
         console.log('👉 Transitioned phase to: AWAITING_DEV');
-        sendPushNotification(`Codex updated UI Spec for [${slug}]. Antigravity can start development.`, notifyChannel);
+        sendPushNotification(`Plan/Spec updated for [${slug}]. Antigravity can start development.`, notifyChannel);
 
       } else if (baseName === '01_PRD.md') {
         if (!rootState.active_features) rootState.active_features = {};
         if (!rootState.active_features[slug]) rootState.active_features[slug] = {};
-        rootState.active_features[slug].phase = 'AWAITING_ASTRA';
+        rootState.active_features[slug].phase = 'AWAITING_PLAN';
         rootState.active_features[slug].last_actor = 'antigravity_pm';
         rootState.active_features[slug].updated_at = nowIso;
         saveState(stateFile, rootState);
@@ -118,14 +118,14 @@ try {
         const featureStatePath = path.join(agentsDir, 'features', slug, 'STATE.json');
         if (fs.existsSync(path.dirname(featureStatePath))) {
           const featState = loadState(featureStatePath);
-          featState.phase = 'AWAITING_ASTRA';
+          featState.phase = 'AWAITING_PLAN';
           featState.last_actor = 'antigravity_pm';
           featState.updated_at = nowIso;
           saveState(featureStatePath, featState);
         }
 
         console.log(`\n⚡ [WATCHER]: Detected PRD update for [${slug}] by PM!`);
-        console.log('👉 Transitioned phase to: AWAITING_ASTRA');
+        console.log('👉 Transitioned phase to: AWAITING_PLAN');
         sendPushNotification(`PM updated PRD for [${slug}]. Open Codex to design UI / plan architecture.`, notifyChannel);
       }
     }, 500);

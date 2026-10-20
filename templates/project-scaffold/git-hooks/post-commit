@@ -11,7 +11,7 @@ if [ -f ".agents/STATE.json" ]; then
     const https = require("https");
 
     const commitMsg = process.env.COMMIT_MSG || "";
-    const match = commitMsg.match(/\[(AG-PM|CODEX-ASTRA|CODEX-PLAN|AG-DEV|AG-REVIEW|AG-QA)\](?:\(([^)]+)\))?/);
+    const match = commitMsg.match(/\[(AG-PM|CODEX-ASTRA|CODEX-PLAN|AG-DEV|AG-REVIEW|AG-TEST|AG-QA)\](?:\(([^)]+)\))?/);
     if (!match) process.exit(0);
 
     const tag = match[1];
@@ -42,6 +42,10 @@ if [ -f ".agents/STATE.json" ]; then
     } else if (tag === "AG-REVIEW") {
       newPhase = "AWAITING_QA";
       lastActor = "antigravity_reviewer";
+    } else if (tag === "AG-TEST") {
+      newPhase = "AWAITING_QA";
+      lastActor = "antigravity_tester";
+      notifyText = "Unit tests authored for [" + slug + "]. Ready for QA verification.";
     } else if (tag === "AG-QA") {
       newPhase = "COMPLETED";
       lastActor = "antigravity_qa";
@@ -68,8 +72,9 @@ if [ -f ".agents/STATE.json" ]; then
     console.log("⚡ [Hook]: Updated state for [" + slug + "] -> " + newPhase);
 
     // 3. Dispatch push notification if channel configured
-    if (notifyText && rootState.notification_channel) {
-      const req = https.request("https://ntfy.sh/" + rootState.notification_channel, {
+    const channel = rootState.notification_channel || "craftsquad-alerts";
+    if (notifyText && channel) {
+      const req = https.request("https://ntfy.sh/" + channel, {
         method: "POST",
         headers: { "Content-Type": "text/plain", "Title": "CraftSquad Alert" }
       });

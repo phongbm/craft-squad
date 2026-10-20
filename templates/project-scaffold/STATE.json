@@ -1,7 +1,7 @@
 {
   "project_name": "MyProject",
   "active_branch": "main",
-  "notification_channel": "craftxtech-alerts",
+  "notification_channel": "craftsquad-alerts",
   "active_features": {
     "sample-feature": {
       "phase": "IDLE",

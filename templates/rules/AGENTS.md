@@ -62,6 +62,7 @@ When working in the shared workspace directory:
 ## 7. Git Commit Convention
 Prefix all commits with the executor tag and feature slug:
 - `[AG-PM](<slug>):` Requirements & PRD updates
+- `[CODEX-PLAN](<slug>):` System architecture & task breakdown updates
 - `[CODEX-ASTRA](<slug>):` UI & Design System specifications
 - `[AG-DEV](<slug>):` Pure feature implementation
 - `[AG-REVIEW](<slug>):` Code review approvals / audit
