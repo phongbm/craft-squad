@@ -1,19 +1,23 @@
 # Product Requirements Document (PRD)
 
-## 1. Tổng quan & Mục tiêu
-- **Tên tính năng/sản phẩm:** 
-- **Mục tiêu chính:** 
-- **Đối tượng người dùng:** 
+## 1. Overview & Objectives
+- **Feature Name / Slug:** 
+- **Primary Goal:** 
+- **Target Audience:** 
+- **Target Platform:** [Web | Mobile (Flutter) | Mobile (React Native)]
 
-## 2. User Stories & Luồng trải nghiệm chính
-- **Story 1:** 
-- **Story 2:** 
+## 2. User Stories & Core Journey
+- **User Story 1:** 
+- **User Story 2:** 
 
-## 3. Danh sách màn hình & Thành phần chính
-- Màn hình A:
-- Màn hình B:
+## 3. Screen Breakdown & Components
+- Screen / View A:
+- Screen / View B:
 
-## 4. Ràng buộc & Tiêu chuẩn kỹ thuật
-- Framework: React / Next.js / Vue / HTML Tailwind
+## 4. Technical Constraints & Acceptance Criteria
+- Tech Stack:
 - State Management:
-- Responsive: Mobile first / Desktop
+- Responsive / Multi-device:
+
+## 5. Changelog / Quick Patch (For minor updates & hotfixes)
+- `YYYY-MM-DD`: 

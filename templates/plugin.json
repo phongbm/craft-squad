@@ -1,11 +1,11 @@
 {
   "name": "craft-squad",
   "version": "1.0.0",
-  "description": "CraftSquad: The 6-Role Software Engineering Team for Web & Mobile (PM, UX/UI Designer, Developer, Code Reviewer, QA Verifier, Unit Tester).",
+  "description": "CraftSquad: Autonomous multi-agent orchestration system for Antigravity and Codex across Web & Mobile.",
   "displayName": "CraftSquad",
   "suggestedPrompts": [
-    "Khởi tạo feature mới cùng PM CraftSquad",
-    "Kiểm tra .agents/STATE.json và triển khai tiếp",
-    "Chạy QA Verifier kiểm tra build dự án"
+    "Start a new feature brainstorm with PM",
+    "Inspect .agents/STATE.json and proceed with next tasks",
+    "Run QA Verifier to check build and type integrity"
   ]
 }

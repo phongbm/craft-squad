@@ -1,27 +1,26 @@
 # Technical & UI Specification
 
-## 1. Nền tảng & Thiết lập chung
-- **Nền tảng:** [Web | Flutter | React Native | iOS | Android]
-- **Design Tokens / Theme Constants:**
-  - Bảng màu: Primary, Secondary, Background, Text
+## 1. Platform & Design System
+- **Platform:** [Web | Flutter | React Native | iOS | Android]
+- **Design Tokens:**
+  - Palette: Primary, Secondary, Background, Text
   - Typography Scale
-  - Spacing & Corner Radius (Bo góc)
+  - Spacing & Corner Radii
 
-## 2. Tiêu chuẩn UX Mobile (Nếu làm Mobile App)
-- **Safe Area Insets:** Xử lý tai thỏ / dynamic island / navigation bar
-- **Touch Targets:** Tối thiểu 44-48pt/dp cho các nút bấm và icon
-- **Mobile Navigation:** Bottom navigation bar / Stack push-pop / Modal bottom sheet
+## 2. Mobile UX Ergonomics (If Mobile App)
+- **Safe Area Insets:** Dynamic Island, notch, status bar, and home indicator padding.
+- **Touch Targets:** Minimum $44\text{--}48\text{dp/pt}$ for interactive elements.
+- **Mobile Navigation:** Bottom navigation bar, stack push/pop, bottom sheet modals.
 
-## 3. Component Breakdown (Presentational Components)
-- `src/features/...` (hoặc `lib/features/...` cho Flutter)
-  - Tên Component / Widget:
+## 3. Presentational Component Breakdown
+- `src/features/...` (or `lib/features/...`)
+  - Component Name:
   - Props / Inputs:
-  - Styling / Layout: (Tailwind classes hoặc Flutter Widget properties)
-  - Responsive / Multi-device support: (Mobile, Tablet, Desktop)
+  - Layout / Styling: (Tailwind classes or Widget parameters)
+  - Responsive Breakpoints:
 
-## 4. Data Schema & Mock Fixtures
+## 4. Types & Data Schema
 ```typescript
-// hoặc Dart class nếu là Flutter
 export interface DataItem {
   id: string;
   title: string;

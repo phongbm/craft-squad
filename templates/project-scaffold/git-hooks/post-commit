@@ -1,6 +1,6 @@
 #!/bin/sh
-# CraftXTech Multi-Agent Git Hook
-# Tự động nhận diện Feature Slug, cập nhật STATE.json và gửi thông báo push về điện thoại
+# CraftSquad Multi-Agent Git Hook
+# Automatically detects Feature Slug, updates STATE.json, and dispatches push notifications
 
 LAST_COMMIT_MSG=$(git log -1 --pretty=%B)
 
@@ -11,8 +11,7 @@ if [ -f ".agents/STATE.json" ]; then
     const https = require("https");
 
     const commitMsg = process.env.COMMIT_MSG || "";
-    // Regex khớp: [TAG](slug): hoặc [TAG]:
-    const match = commitMsg.match(/\[(AG-PM|CODEX-ASTRA|AG-DEV|AG-QA)\](?:\(([^)]+)\))?/);
+    const match = commitMsg.match(/\[(AG-PM|CODEX-ASTRA|CODEX-PLAN|AG-DEV|AG-REVIEW|AG-QA)\](?:\(([^)]+)\))?/);
     if (!match) process.exit(0);
 
     const tag = match[1];
@@ -30,29 +29,32 @@ if [ -f ".agents/STATE.json" ]; then
     let notifyText = "";
 
     if (tag === "AG-PM") {
-      newPhase = "AWAITING_ASTRA";
+      newPhase = "AWAITING_PLAN";
       lastActor = "antigravity_pm";
-      notifyText = "PM đã commit PRD cho [" + slug + "]! Hãy mở Codex gõ /next";
-    } else if (tag === "CODEX-ASTRA") {
+      notifyText = "PM committed PRD for [" + slug + "]. Open Codex to design or plan.";
+    } else if (tag === "CODEX-PLAN" || tag === "CODEX-ASTRA") {
       newPhase = "AWAITING_DEV";
-      lastActor = "codex_astra";
-      notifyText = "Astra đã lên Plan cho [" + slug + "]! Mở Antigravity gõ /next";
+      lastActor = "codex";
+      notifyText = "Codex finalized plan/spec for [" + slug + "]. Antigravity can proceed with development.";
     } else if (tag === "AG-DEV") {
-      newPhase = "VERIFYING";
+      newPhase = "AWAITING_REVIEW";
       lastActor = "antigravity_dev";
+    } else if (tag === "AG-REVIEW") {
+      newPhase = "AWAITING_QA";
+      lastActor = "antigravity_reviewer";
     } else if (tag === "AG-QA") {
       newPhase = "COMPLETED";
       lastActor = "antigravity_qa";
-      notifyText = "Tính năng [" + slug + "] đã PASS toàn bộ kiểm thử!";
+      notifyText = "Feature [" + slug + "] successfully PASSED verification & build!";
     }
 
-    // 1. Cập nhật Root STATE.json
+    // 1. Update Root STATE.json
     rootState.active_features[slug].phase = newPhase;
     rootState.active_features[slug].last_actor = lastActor;
     rootState.active_features[slug].updated_at = nowIso;
     fs.writeFileSync(rootStateFile, JSON.stringify(rootState, null, 2));
 
-    // 2. Cập nhật Feature-specific STATE.json nếu tồn tại
+    // 2. Update Feature-specific STATE.json if present
     const featStateFile = path.join(".agents", "features", slug, "STATE.json");
     if (fs.existsSync(path.dirname(featStateFile))) {
       let featState = {};
@@ -63,13 +65,13 @@ if [ -f ".agents/STATE.json" ]; then
       fs.writeFileSync(featStateFile, JSON.stringify(featState, null, 2));
     }
 
-    console.log("⚡ [Hook]: Đã cập nhật trạng thái [" + slug + "] -> " + newPhase);
+    console.log("⚡ [Hook]: Updated state for [" + slug + "] -> " + newPhase);
 
-    // 3. Gửi push notification nếu có channel
+    // 3. Dispatch push notification if channel configured
     if (notifyText && rootState.notification_channel) {
       const req = https.request("https://ntfy.sh/" + rootState.notification_channel, {
         method: "POST",
-        headers: { "Content-Type": "text/plain", "Title": "CraftXTech Agent Alert" }
+        headers: { "Content-Type": "text/plain", "Title": "CraftSquad Alert" }
       });
       req.on("error", () => {});
       req.write(notifyText);

@@ -8,17 +8,17 @@ description: >-
 # Developer Executor Runbook
 
 ## Core Rules & Strict Boundaries
-1. **CODE ONLY:** Nhiệm vụ duy nhất là viết mã nguồn (logic, state, markup, props).
+1. **CODE ONLY:** Sole responsibility is authoring source code (logic, state, markup, props).
 2. **STRICTLY NO TESTS / NO BUILDS:**
-   - **KHÔNG** tự ý chạy `npm run build` hoặc `npx tsc`. (Việc này do QA Verifier làm).
-   - **KHÔNG** tự ý chạy `npm test` hoặc viết unit test. (Việc này do Unit Tester làm khi có lệnh từ PM).
-3. **Tuân thủ 100% UI Spec:**
-   - Nếu có file `02_UI_SPEC.md` từ Codex Astra: giữ nguyên 100% class Tailwind, màu sắc, font chữ và props. Không tự ý chỉnh sửa thẩm mỹ.
-4. **Phạm vi cô lập:**
-   - Chỉ tạo/sửa file trong namespace được giao: `src/features/<feature-slug>/` hoặc các file chỉ định.
-   - Tuyệt đối không chạy `git checkout` đổi branch.
+   - **DO NOT** execute `npm run build` or `npx tsc`. (Handled by QA Verifier).
+   - **DO NOT** execute `npm test` or author unit tests. (Handled by Unit Tester on demand).
+3. **100% Spec Compliance:**
+   - When a `02_UI_SPEC.md` exists from Codex Astra: preserve 100% of Tailwind classes, colors, fonts, and props. Never unilaterally alter visual aesthetics.
+4. **Scope Isolation:**
+   - Only edit/create files within the assigned feature namespace: `src/features/<feature-slug>/` or `lib/features/<feature-slug>/`.
+   - Never run `git checkout` to switch branches.
 
 ## Execution Sequence
-1. Đọc task trong `03_TASKS.md`.
-2. Viết/sửa code hoàn chỉnh.
-3. Tóm tắt danh sách file đã thay đổi và bàn giao cho Code Reviewer / QA Verifier.
+1. Read the assigned task in `03_TASKS.md`.
+2. Implement complete, production-ready code without placeholders or `// TODO` stubs.
+3. Summarize modified/created files and hand off to Code Reviewer / QA Verifier.

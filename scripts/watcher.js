@@ -2,8 +2,8 @@
 
 /**
  * CraftSquad File Watcher
- * Tự động theo dõi các file Handoff trong .agents/ (hỗ trợ cả multi-feature subdirectories)
- * và phát hiện khi Astra hoặc PM vừa hoàn thành nhiệm vụ.
+ * Automatically monitors handoff files in .agents/ (including recursive multi-feature subdirectories)
+ * and detects when Codex or PM updates specifications.
  */
 
 const fs = require('fs');
@@ -14,7 +14,7 @@ const agentsDir = path.join(process.cwd(), '.agents');
 const stateFile = path.join(agentsDir, 'STATE.json');
 
 if (!fs.existsSync(agentsDir)) {
-  console.error('❌ Không tìm thấy thư mục .agents/. Hãy chạy `npx craft-squad init` trước.');
+  console.error('❌ .agents/ directory not found. Run `npx craft-squad init` first.');
   process.exit(1);
 }
 
@@ -30,7 +30,7 @@ function saveState(filePath, state) {
   try {
     fs.writeFileSync(filePath, JSON.stringify(state, null, 2), 'utf8');
   } catch (e) {
-    console.error('Lỗi khi lưu state file:', filePath, e.message);
+    console.error('Failed to save state file:', filePath, e.message);
   }
 }
 
@@ -53,8 +53,8 @@ function sendPushNotification(message, channel) {
   req.end();
 }
 
-console.log('👀 CraftSquad Watcher đang lắng nghe thư mục .agents/...');
-console.log('💡 Hỗ trợ tự động nhận diện cả thư mục features/<slug>/ đa tính năng (Web & Mobile).');
+console.log('👀 CraftSquad Watcher is listening to .agents/...');
+console.log('💡 Supports recursive multi-feature detection for Web & Mobile.');
 
 let debounceTimeout = null;
 
@@ -103,9 +103,9 @@ try {
           saveState(featureStatePath, featState);
         }
 
-        console.log(`\n⚡ [WATCHER]: Phát hiện Astra vừa cập nhật UI Spec cho [${slug}]!`);
-        console.log('👉 Trạng thái chuyển thành: AWAITING_DEV');
-        sendPushNotification(`Astra đã lên UI Spec cho [${slug}]! Antigravity có thể triển khai code ngay.`, notifyChannel);
+        console.log(`\n⚡ [WATCHER]: Detected UI Spec update for [${slug}] by Codex!`);
+        console.log('👉 Transitioned phase to: AWAITING_DEV');
+        sendPushNotification(`Codex updated UI Spec for [${slug}]. Antigravity can start development.`, notifyChannel);
 
       } else if (baseName === '01_PRD.md') {
         if (!rootState.active_features) rootState.active_features = {};
@@ -124,12 +124,12 @@ try {
           saveState(featureStatePath, featState);
         }
 
-        console.log(`\n⚡ [WATCHER]: Phát hiện PM vừa cập nhật PRD cho [${slug}]!`);
-        console.log('👉 Trạng thái chuyển thành: AWAITING_ASTRA');
-        sendPushNotification(`PM đã cập nhật PRD cho [${slug}]! Mở Codex để Astra lên UI Plan.`, notifyChannel);
+        console.log(`\n⚡ [WATCHER]: Detected PRD update for [${slug}] by PM!`);
+        console.log('👉 Transitioned phase to: AWAITING_ASTRA');
+        sendPushNotification(`PM updated PRD for [${slug}]. Open Codex to design UI / plan architecture.`, notifyChannel);
       }
     }, 500);
   });
 } catch (err) {
-  console.error('Lỗi khởi động Watcher:', err.message);
+  console.error('Watcher initialization error:', err.message);
 }

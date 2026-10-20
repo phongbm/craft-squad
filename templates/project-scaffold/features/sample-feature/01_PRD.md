@@ -1,14 +1,13 @@
 # Feature PRD: Sample Feature
 
-## 1. Tổng quan & Mục tiêu
+## 1. Overview & Objectives
 - **Feature Slug:** sample-feature
-- **Mục tiêu:** 
-- **Người dùng mục tiêu:** 
+- **Goal:** Provide a reference implementation for CraftSquad workflow.
+- **Target Platform:** Web & Mobile
 
-## 2. User Stories & Luồng trải nghiệm
-- **Story 1:** 
-- **Story 2:** 
+## 2. User Stories
+- **Story 1:** As a user, I want a clean dashboard card displaying core metrics.
+- **Story 2:** As a user, I want responsive touch targets on mobile devices.
 
-## 3. Danh sách Components & Màn hình
-- Component 1: `src/features/sample-feature/...`
-- Component 2: `src/features/sample-feature/...`
+## 3. Screen & Component Scope
+- `src/features/sample-feature/components/SampleCard.tsx` (or Flutter widget equivalent)

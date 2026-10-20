@@ -1,14 +1,15 @@
-# Prompt Handoff dành cho ChatGPT Plus (DALL-E 3) để tạo ảnh Decor
+# Handoff Prompt for ChatGPT Plus (DALL-E 3) to Generate Visual Assets
 
 ```text
-Tôi đang xây dựng giao diện web cho: [Mô tả ngắn về sản phẩm/tính năng].
-Phong cách thiết kế: [Minimalist / 3D Clay / Cyberpunk / Tech Isometric / Glassmorphism].
-Bảng màu chủ đạo: [Màu sắc chính, ví dụ: Xanh Navy #0F172A, Tím Gradient #8B5CF6].
+Project / Feature: [Brief description of product or feature].
+Design Aesthetic: [Minimalist / 3D Clay / Cyberpunk / Tech Isometric / Glassmorphism].
+Primary Color Palette: [Primary HEX/RGB, e.g., Navy #0F172A, Violet #8B5CF6].
 
-Hãy tạo cho tôi 1 ảnh minh họa kích thước [16:9 cho Hero Banner / 1:1 cho Feature Card] thể hiện: [Mô tả chi tiết khung cảnh].
-Yêu cầu bắt buộc:
-- Tuyệt đối KHÔNG chứa chữ (No text / No typography).
-- Nền sạch (clean background) hoặc gradient êm để dễ tích hợp vào web.
-- Màu sắc và ánh sáng đồng bộ với bảng màu trên.
-Tải ảnh về và lưu vào thư mục public/assets/ của dự án.
+Create an illustration sized [16:9 for Hero Banner / 1:1 for Feature Card] depicting: [Detailed scene description].
+MANDATORY REQUIREMENTS:
+- Absolutely NO text, letters, or typography inside the image.
+- Clean background or smooth gradient to blend seamlessly into UI cards.
+- Lighting and color palette strictly aligned with the design system above.
+
+Save the downloaded image to `public/assets/` or `assets/images/`.
 ```

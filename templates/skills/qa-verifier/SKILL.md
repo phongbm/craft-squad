@@ -8,25 +8,26 @@ description: >-
 # QA & Build Verifier Runbook (Web & Mobile)
 
 ## Core Scope
-Đảm bảo toàn bộ dự án **biên dịch thành công, không lỗi type, không lỗi syntax** trên nền tảng mục tiêu (Web hoặc Mobile).
+Verify that the entire repository **compiles, passes typechecks, and builds cleanly with exit code 0** across target platforms (Web or Mobile).
 
-## Verification Sequences theo Nền tảng
+## Platform Verification Sequences
 
-### 1. Dành cho Web (React / Next.js / Vue / TypeScript)
+### 1. Web Projects (React / Next.js / TypeScript)
 - Typecheck: `npx tsc --noEmit`
-- Linter: `npm run lint` hoặc `npm run check`
+- Linter: `npm run lint` or `npm run check`
 - Build: `npm run build`
 
-### 2. Dành cho Mobile Flutter (Dart)
+### 2. Mobile Projects (Flutter / Dart)
 - Static Analysis: `flutter analyze`
 - Tests: `flutter test`
-- Build Dry-Run: `flutter build bundle` hoặc `flutter build apk --debug`
+- Build Dry-Run: `flutter build bundle` or `flutter build apk --debug`
 
-### 3. Dành cho Mobile React Native / Expo
+### 3. Mobile Projects (React Native / Expo)
 - Typecheck: `npx tsc --noEmit`
 - Linter: `npm run lint`
-- Expo Bundle Check: `npx expo export --dump-sourcemap`
+- Bundle Export: `npx expo export --dump-sourcemap`
 
 ## Auto-Remediation & Pass Gate
-- Nếu phát hiện lỗi import, sai cú pháp nhẹ: Tự động sửa trực tiếp.
-- Chỉ gắn mác PASS khi toàn bộ script kiểm tra trả về exit code 0.
+- For minor import typos or missing basic types: fix directly.
+- For structural logic errors: report exact error lines to Developer.
+- Mark PASS gate only when all verification commands return exit code 0.

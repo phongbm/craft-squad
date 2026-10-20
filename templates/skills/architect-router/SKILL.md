@@ -9,21 +9,21 @@ description: >-
 
 ## 1. Dual-Engine Planning Matrix
 
-| Tiêu chí | Gemini Planner (Local) | Codex Planner (Frontier) |
+| Criteria | Gemini Planner (Local) | Codex Planner (Frontier) |
 |---|---|---|
-| **Độ phức tạp bài toán** | Thấp đến trung bình, có mẫu rõ ràng. | Cao, nhiều tầng nghiệp vụ, trừu tượng. |
-| **Phạm vi thay đổi** | Cục bộ 1-3 files, fix bug, CRUD chuẩn. | Hệ thống mới, luồng dữ liệu mới, UI/UX mới. |
-| **Độ trễ & Thao tác** | Tức thì trong 2s, 0 thao tác copy-paste. | Cần 1 lần copy-paste qua app Codex. |
+| **Problem Complexity** | Low to medium; clear established patterns. | High; multi-tiered domain logic, abstract systems. |
+| **Scope of Change** | Localized (1-3 files), bugfixes, standard CRUD. | New subsystems, novel data flows, full UI/UX design. |
+| **Latency & Overhead** | Instant (2s), 0 handoff steps. | Requires one copy-paste step via Codex app. |
 
 ## 2. Granular Task Tagging Matrix
 
-Khi lập `03_TASKS.md`, phân bổ từng task theo đúng sở trường:
+When authoring `03_TASKS.md`, assign each task to the model best suited for it:
 
-| Thẻ phân bổ | Model thực hiện | Nội dung công việc |
+| Allocation Tag | Assigned Model | Scope of Work |
 |---|:---:|---|
-| `[DELEGATE: CODEX-UI]` | Codex Astra | Tạo khung JSX/HTML, Tailwind classes, Responsive breakpoints, Props interface. |
-| `[DELEGATE: CODEX-LOGIC]` | Codex Astra | Viết thuật toán khó, luồng state phức tạp, xử lý dữ liệu nhiều bước (Pseudocode). |
-| `[DELEGATE: GEMINI-DEV]` | Gemini Flash | Lắp ráp UI + Logic thành code hoàn chỉnh, nối state, fetch API, validation. *(Không test/build)*. |
-| `[DELEGATE: GEMINI-REVIEW]` | Gemini Flash | So sánh code diff với UI Spec và PRD, kiểm tra clean code & bảo mật. |
-| `[DELEGATE: GEMINI-QA]` | Gemini Flash | Chạy `npx tsc --noEmit`, `npm run lint`, `npm run build`. |
-| `[DELEGATE: GEMINI-UNIT-TEST]` | Gemini Flash | Viết `*.test.ts` và chạy `npm test` khi có yêu cầu từ PM. |
+| `[DELEGATE: CODEX-UI]` | Codex Astra | Presentational JSX/HTML/Widget skeletons, Tailwind classes, responsive breakpoints, Props interface. |
+| `[DELEGATE: CODEX-LOGIC]` | Codex Astra | Complex algorithms, state machine transitions, multi-step data pipelines (pseudocode/spec). |
+| `[DELEGATE: GEMINI-DEV]` | Gemini Flash | Implementation: assembling UI + Logic, state wiring, API integration, validation. *(No testing/building)*. |
+| `[DELEGATE: GEMINI-REVIEW]` | Gemini Flash | Audits code diff against UI Spec and PRD; checks clean code & security standards. |
+| `[DELEGATE: GEMINI-QA]` | Gemini Flash | Runs `npx tsc --noEmit`, `npm run lint`, `npm run build` (or mobile equivalents). |
+| `[DELEGATE: GEMINI-UNIT-TEST]` | Gemini Flash | Authors `*.test.ts` / `*_test.dart` and executes test runner on-demand. |

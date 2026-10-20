@@ -28,7 +28,7 @@ function copyRecursiveSync(src, dest) {
 }
 
 function installGlobalPlugin() {
-  console.log('📦 Đang cài đặt Global Plugin vào Antigravity...');
+  console.log('📦 Installing Global Plugin into Antigravity...');
   const targetGlobalDir = path.join(userHome, '.gemini', 'config', 'plugins', 'craft-squad');
 
   if (!fs.existsSync(targetGlobalDir)) {
@@ -39,16 +39,16 @@ function installGlobalPlugin() {
   copyRecursiveSync(path.join(templatesDir, 'rules'), path.join(targetGlobalDir, 'rules'));
   copyRecursiveSync(path.join(templatesDir, 'skills'), path.join(targetGlobalDir, 'skills'));
 
-  console.log(`✅ Global Plugin đã được cài đặt tại: ${targetGlobalDir}`);
+  console.log(`✅ Global Plugin installed at: ${targetGlobalDir}`);
 }
 
 function initProjectScaffold() {
-  console.log('🚀 Đang khởi tạo bộ khung CraftSquad (.agents/) trong dự án hiện tại...');
+  console.log('🚀 Initializing CraftSquad scaffold (.agents/) in current project...');
   const targetProjectAgentsDir = path.join(process.cwd(), '.agents');
   const scaffoldSourceDir = path.join(templatesDir, 'project-scaffold');
 
   copyRecursiveSync(scaffoldSourceDir, targetProjectAgentsDir);
-  console.log(`✅ Đã khởi tạo thư mục: ${targetProjectAgentsDir}`);
+  console.log(`✅ Scaffold initialized at: ${targetProjectAgentsDir}`);
 
   // Setup Git hook if .git folder exists
   const gitHooksDir = path.join(process.cwd(), '.git', 'hooks');
@@ -58,12 +58,12 @@ function initProjectScaffold() {
     try {
       fs.copyFileSync(hookSource, hookTarget);
       try { fs.chmodSync(hookTarget, '755'); } catch (e) {}
-      console.log('✅ Đã tự động kích hoạt Git Hook tại: .git/hooks/post-commit');
+      console.log('✅ Git Hook automatically activated at: .git/hooks/post-commit');
     } catch (err) {
-      console.warn('⚠️ Không thể cài đặt git hook tự động:', err.message);
+      console.warn('⚠️ Unable to install git hook automatically:', err.message);
     }
   } else {
-    console.log('ℹ️ Thư mục hiện tại chưa có .git. Hãy chạy `git init` để sử dụng tính năng auto-hook.');
+    console.log('ℹ️ No .git directory detected. Run `git init` to enable automatic hook sync.');
   }
 }
 
@@ -81,15 +81,15 @@ switch (command) {
   case 'setup':
   default:
     console.log('\n======================================================');
-    console.log('🌟 CraftSquad: Autonomous Engineering Team 🌟');
+    console.log('🌟 CraftSquad: Autonomous Multi-Agent Orchestrator 🌟');
     console.log('======================================================\n');
     installGlobalPlugin();
     initProjectScaffold();
-    console.log('\n🎉 HOÀN TẤT THIẾT LẬP!');
-    console.log('📌 Hướng dẫn sử dụng:');
-    console.log('1. Mở Antigravity trên điện thoại -> Giữ 1 Thread duy nhất cho PM.');
-    console.log('2. Mở Codex trên điện thoại -> Giữ 1 Thread duy nhất cho UX/UI Designer.');
-    console.log('3. Hai agent tự động đồng bộ qua .agents/STATE.json và Git (hỗ trợ cả Web & Mobile)!\n');
+    console.log('\n🎉 SETUP COMPLETE!');
+    console.log('📌 Quick Start:');
+    console.log('1. Open Antigravity on your phone -> Keep a single persistent thread with PM.');
+    console.log('2. Open Codex on your phone -> Keep a single persistent thread for UX/UI / Architecture.');
+    console.log('3. Agents synchronize automatically via .agents/STATE.json and Git (Web & Mobile)!\n');
     break;
 
   case 'watch':

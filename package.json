@@ -1,7 +1,7 @@
 {
   "name": "craft-squad",
   "version": "1.0.0",
-  "description": "CraftSquad: The 6-Role Autonomous Software Engineering Squad for Antigravity & Codex (Web & Mobile)",
+  "description": "CraftSquad: Autonomous multi-agent orchestration system for Antigravity and Codex (Web & Mobile)",
   "main": "bin/cli.js",
   "bin": {
     "craft-squad": "./bin/cli.js"
@@ -11,13 +11,10 @@
     "antigravity",
     "codex",
     "multi-agent",
-    "pm",
-    "ux-designer",
-    "flutter",
-    "react-native",
     "orchestrator",
     "mobile-remote",
-    "squad"
+    "web-and-mobile",
+    "ai-agents"
   ],
   "author": "CraftXTech Team",
   "license": "MIT",

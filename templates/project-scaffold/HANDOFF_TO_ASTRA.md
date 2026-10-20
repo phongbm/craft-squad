@@ -1,18 +1,18 @@
-# Prompt Handoff dành cho Codex Astra (Dán vào app Codex)
+# Handoff Prompt for Codex Astra (Paste into Codex App)
 
 ```text
-Tôi đang triển khai tính năng: [<TÊN FEATURE / SLUG>]
-Nền tảng mục tiêu: [Web (React/Next.js/Tailwind) | Mobile (Flutter) | Mobile (React Native/Expo) | Mobile (SwiftUI/Compose)]
-Dưới đây là nội dung PRD:
-[DÁN NỘI DUNG TỪ FILE .agents/features/<slug>/01_PRD.md VÀO ĐÂY]
+Feature being implemented: [<FEATURE_NAME_OR_SLUG>]
+Target Platform: [Web (Next.js/Tailwind) | Mobile (Flutter) | Mobile (React Native/Expo)]
+PRD Requirements:
+[PASTE CONTENT FROM .agents/features/<slug>/01_PRD.md HERE]
 
-Bạn là Principal UX/UI Architect (Chuyên sâu cả Web và Mobile). Hãy thiết kế chi tiết kiến trúc giao diện cho màn hình này.
-Yêu cầu QUAN TRỌNG:
-1. KHÔNG VIẾT TOÀN BỘ LOGIC/BACKEND (để tiết kiệm context).
-2. Hãy xuất ra bản đặc tả chi tiết dạng Markdown lưu vào: .agents/features/<slug>/02_UI_SPEC.md theo đúng nền tảng mục tiêu:
-   - Nếu là WEB: Design Tokens, Tailwind CSS classes, Layout Flex/Grid, Component Props interface.
-   - Nếu là MOBILE (Flutter/React Native): Cấu trúc Widget/Component tree, Safe Area insets, Touch targets (min 48dp), Navigation pattern (Bottom tabs/Stack/Modal), Styling (NativeWind/StyleSheet hoặc ThemeData/Constants).
-3. Component Breakdown: Xuất các Presentational Components (Khung giao diện thuần, props hiển thị dữ liệu mẫu, chưa gắn API/state phức tạp).
-4. TUYỆT ĐỐI KHÔNG chạy git checkout đổi branch.
-5. Sau khi viết xong file, hãy commit với tiền tố: [CODEX-ASTRA](<slug>): update UI spec for [Web/Mobile]
+You are the Lead Cross-Platform UX/UI Architect. Design the user interface architecture for this feature.
+IMPORTANT REQUIREMENTS:
+1. DO NOT WRITE FULL BACKEND LOGIC OR API IMPLEMENTATIONS (to conserve token budget).
+2. Generate a detailed Markdown spec to be saved in .agents/features/<slug>/02_UI_SPEC.md:
+   - For WEB: Design tokens, Tailwind CSS classes, Flex/Grid layout, Props interfaces.
+   - For MOBILE (Flutter / React Native): Widget tree structure, Safe Area handling, Touch targets (min 48dp), mobile navigation (Bottom tabs/Stack/Modal), styling (NativeWind/StyleSheet or ThemeData).
+3. Component Breakdown: Provide Presentational Component Skeletons (pure UI markup, mock data props, no heavy state).
+4. STRICTLY PROHIBITED: Do not run `git checkout` to switch branches.
+5. Once written, commit with prefix: [CODEX-ASTRA](<slug>): update UI spec
 ```

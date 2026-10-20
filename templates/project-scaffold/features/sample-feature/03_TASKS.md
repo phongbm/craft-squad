@@ -1,24 +1,24 @@
 # Tasks Checklist: Sample Feature
 
-- [ ] **Task 1: [DELEGATE: CODEX-UI] Thiết kế Component Presentational**
+- [ ] **Task 1: [DELEGATE: CODEX-UI] Presentational Component Markup**
   - **File:** `src/features/sample-feature/components/SampleCard.tsx`
-  - **Mô tả:** Codex Astra xuất khung JSX + Tailwind classes + Props interface (Chưa cần nối logic/API).
-  - **Acceptance Criteria:** Đẹp chuẩn responsive, đúng bảng màu thiết kế.
+  - **Description:** Author presentational JSX with Tailwind classes and Props interface.
+  - **Acceptance Criteria:** Matches 02_UI_SPEC.md exactly, responsive layout.
 
-- [ ] **Task 2: [DELEGATE: GEMINI-DEV] Khởi tạo Types & State Management**
+- [ ] **Task 2: [DELEGATE: GEMINI-DEV] State Management & Types**
   - **File:** `src/features/sample-feature/types.ts` & `src/features/sample-feature/hooks/useSample.ts`
-  - **Mô tả:** Gemini Developer khai báo interface TypeScript và logic quản lý state.
-  - **Acceptance Criteria:** Xử lý đầy đủ loading, error, success state.
+  - **Description:** Implement TypeScript interfaces and state management.
+  - **Acceptance Criteria:** Clean typed interfaces, proper loading and error states.
 
-- [ ] **Task 3: [DELEGATE: GEMINI-DEV] Lắp ráp Component & Kết nối API**
+- [ ] **Task 3: [DELEGATE: GEMINI-DEV] Assembly & Integration**
   - **File:** `src/features/sample-feature/index.tsx`
-  - **Mô tả:** Ghép UI từ Task 1 và State từ Task 2 thành tính năng hoàn chỉnh.
-  - **Acceptance Criteria:** Chạy trơn tru, không thay đổi class Tailwind của Task 1.
+  - **Description:** Connect UI component with state logic.
+  - **Acceptance Criteria:** Zero console warnings, functional interactions.
 
 - [ ] **Task 4: [DELEGATE: GEMINI-REVIEW] Code Review & UI Audit**
-  - **Mô tả:** Gemini Code Reviewer đối chiếu code thực tế với 02_UI_SPEC.md.
-  - **Acceptance Criteria:** Phán quyết PASS, không lệch màu sắc/layout.
+  - **Description:** Cross-check diff against 02_UI_SPEC.md.
+  - **Acceptance Criteria:** Review verdict PASS, no styling regressions.
 
-- [ ] **Task 5: [DELEGATE: GEMINI-QA] Build & Typecheck**
-  - **Mô tả:** Gemini QA Verifier chạy `npx tsc --noEmit` và `npm run build`.
-  - **Acceptance Criteria:** Build thành công với exit code 0.
+- [ ] **Task 5: [DELEGATE: GEMINI-QA] Verification & Build**
+  - **Description:** Execute `npx tsc --noEmit` and `npm run build`.
+  - **Acceptance Criteria:** Exit code 0.
