@@ -8,7 +8,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const https = require('https');
 
 const agentsDir = path.join(process.cwd(), '.agents');
 const stateFile = path.join(agentsDir, 'STATE.json');
@@ -34,27 +33,8 @@ function saveState(filePath, state) {
   }
 }
 
-function sendPushNotification(message, channel) {
-  const targetChannel = channel || 'craftsquad-alerts';
-  const postData = message;
-  const req = https.request(
-    `https://ntfy.sh/${targetChannel}`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain',
-        'Title': 'CraftSquad Alert'
-      }
-    },
-    (res) => {}
-  );
-  req.on('error', () => {});
-  req.write(postData);
-  req.end();
-}
-
 console.log('👀 CraftSquad Watcher is listening to .agents/...');
-console.log('💡 Supports recursive multi-feature detection for Web & Mobile.');
+console.log('💡 Pure local execution: zero external network dependencies.');
 
 let debounceTimeout = null;
 
@@ -83,7 +63,6 @@ try {
       }
 
       const rootState = loadState(stateFile);
-      const notifyChannel = rootState.notification_channel || 'craftsquad-alerts';
       const nowIso = new Date().toISOString();
 
       if (baseName === '02_UI_SPEC.md' || baseName === '03_TASKS.md') {
@@ -105,7 +84,6 @@ try {
 
         console.log(`\n⚡ [WATCHER]: Detected ${baseName} update for [${slug}]!`);
         console.log('👉 Transitioned phase to: AWAITING_DEV');
-        sendPushNotification(`Plan/Spec updated for [${slug}]. Antigravity can start development.`, notifyChannel);
 
       } else if (baseName === '01_PRD.md') {
         if (!rootState.active_features) rootState.active_features = {};
@@ -126,7 +104,6 @@ try {
 
         console.log(`\n⚡ [WATCHER]: Detected PRD update for [${slug}] by PM!`);
         console.log('👉 Transitioned phase to: AWAITING_PLAN');
-        sendPushNotification(`PM updated PRD for [${slug}]. Open Codex to design UI / plan architecture.`, notifyChannel);
       }
     }, 500);
   });

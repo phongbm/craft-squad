@@ -1,6 +1,6 @@
 #!/bin/sh
 # CraftSquad Multi-Agent Git Hook
-# Automatically detects Feature Slug, updates STATE.json, and dispatches push notifications
+# Automatically detects Feature Slug and updates local STATE.json
 
 LAST_COMMIT_MSG=$(git log -1 --pretty=%B)
 
@@ -8,7 +8,6 @@ if [ -f ".agents/STATE.json" ]; then
   COMMIT_MSG="$LAST_COMMIT_MSG" node -e '
     const fs = require("fs");
     const path = require("path");
-    const https = require("https");
 
     const commitMsg = process.env.COMMIT_MSG || "";
     const match = commitMsg.match(/\[(AG-PM|CODEX-ASTRA|CODEX-PLAN|AG-DEV|AG-REVIEW|AG-TEST|AG-QA)\](?:\(([^)]+)\))?/);
@@ -26,16 +25,13 @@ if [ -f ".agents/STATE.json" ]; then
 
     let newPhase = "";
     let lastActor = "";
-    let notifyText = "";
 
     if (tag === "AG-PM") {
       newPhase = "AWAITING_PLAN";
       lastActor = "antigravity_pm";
-      notifyText = "PM committed PRD for [" + slug + "]. Open Codex to design or plan.";
     } else if (tag === "CODEX-PLAN" || tag === "CODEX-ASTRA") {
       newPhase = "AWAITING_DEV";
       lastActor = "codex";
-      notifyText = "Codex finalized plan/spec for [" + slug + "]. Antigravity can proceed with development.";
     } else if (tag === "AG-DEV") {
       newPhase = "AWAITING_REVIEW";
       lastActor = "antigravity_dev";
@@ -45,11 +41,9 @@ if [ -f ".agents/STATE.json" ]; then
     } else if (tag === "AG-TEST") {
       newPhase = "AWAITING_QA";
       lastActor = "antigravity_tester";
-      notifyText = "Unit tests authored for [" + slug + "]. Ready for QA verification.";
     } else if (tag === "AG-QA") {
       newPhase = "COMPLETED";
       lastActor = "antigravity_qa";
-      notifyText = "Feature [" + slug + "] successfully PASSED verification & build!";
     }
 
     // 1. Update Root STATE.json
@@ -69,18 +63,6 @@ if [ -f ".agents/STATE.json" ]; then
       fs.writeFileSync(featStateFile, JSON.stringify(featState, null, 2));
     }
 
-    console.log("⚡ [Hook]: Updated state for [" + slug + "] -> " + newPhase);
-
-    // 3. Dispatch push notification if channel configured
-    const channel = rootState.notification_channel || "craftsquad-alerts";
-    if (notifyText && channel) {
-      const req = https.request("https://ntfy.sh/" + channel, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain", "Title": "CraftSquad Alert" }
-      });
-      req.on("error", () => {});
-      req.write(notifyText);
-      req.end();
-    }
+    console.log("⚡ [CraftSquad Hook]: Updated state for [" + slug + "] -> " + newPhase);
   '
 fi

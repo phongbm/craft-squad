@@ -8,13 +8,13 @@
 ## 🌟 Key Highlights
 
 * **Zero Extra API Cost:** Leverages your existing personal subscriptions (Antigravity Gemini Flash + Codex Plus Astra) without pay-per-token API keys.
+* **100% Local & Offline-First:** Operates entirely through local state files (`.agents/STATE.json`) and Git hooks—zero third-party services or external dependencies.
 * **Dual-Engine Planning:** Dynamic planning engine selection—routes high-reasoning architectural problems to Codex (GPT-Frontier) and fast localized plans to Gemini Flash.
 * **Granular Task Delegation:** Breaks features into discrete tasks assigned by model capability (Codex for UI/UX skeletons & algorithms; Gemini for implementation, code review, and build QA).
 * **Cross-Platform by Design:** Full support for both **Web (Next.js/Tailwind)** and **Mobile (Flutter, React Native/Expo)** with native ergonomic standards (touch targets $\ge 48\text{dp}$, safe area insets).
 * **Mobile-Remote Friendly:** Designed to be operated from your phone browser and mobile app:
   * Single persistent thread per tool—zero chat clutter.
   * Zero-branch-hopping concurrency—no accidental physical collisions on disk.
-  * Push alerts via webhook (`ntfy.sh`) when handoffs are ready.
 
 ---
 
@@ -78,7 +78,7 @@ craft-squad/
 ├── bin/
 │   └── cli.js                     # CLI installer (npx craft-squad init)
 ├── scripts/
-│   └── watcher.js                 # Recursive file watcher for auto-handoff detection
+│   └── watcher.js                 # Local recursive file watcher for auto-handoff detection
 ├── templates/
 │   ├── plugin.json                # Antigravity plugin manifest
 │   ├── rules/
@@ -102,7 +102,7 @@ craft-squad/
 │       ├── HANDOFF_TO_CODEX_PLANNER.md
 │       ├── HANDOFF_TO_CHATGPT.md
 │       └── git-hooks/
-│           └── post-commit        # Automatic Git-driven state transitions & push alerts
+│           └── post-commit        # Automatic local Git-driven state transitions
 ├── package.json
 └── README.md
 ```
