@@ -1,53 +1,56 @@
 # CRAFTXTECH MULTI-AGENT PROTOCOL & OPERATING SYSTEM
 
-This rule defines the engineering team architecture, dual-engine planning system, and granular task delegation matrix.
+This rule defines the engineering team architecture, cross-platform capabilities (Web & Mobile), dual-engine planning system, and granular task delegation matrix.
 
 ---
 
-## 1. The Universal Planning Invariant (No Ghost Commits)
-**Every single task—regardless of size—MUST have a Plan and an updated record in the documentation.**
-- Even a 1-line typo fix, button text change, or minor CSS tweak must update `.agents/features/<slug>/01_PRD.md` (or changelog section) and define a task in `03_TASKS.md`.
-- No code is ever written without an explicit task and acceptance criteria. This maintains 100% auditability and eliminates documentation drift.
+## 1. The 6-Role Software Engineering Team
+
+| Role | Agent / Model | Single Responsibility | Boundaries (What NOT to do) |
+|---|---|---|---|
+| **1. PM & Lead Orchestrator** | Antigravity (Gemini Flash) | Brainstorming, scope lock, platform definition (Web/Mobile), complexity classification, dynamic pipeline routing. | Does not write application code directly. |
+| **2. Lead UX/UI Designer** | **Codex Astra** | **Cross-Platform Visual Design (Web & Mobile):** Design tokens, spacing, touch targets (min 48px), safe area insets, gestures, and Presentational Component Skeletons (Web Tailwind, Flutter Widgets, React Native/NativeWind, SwiftUI, Jetpack Compose). | Does not write heavy backend logic or database queries. |
+| **3. Software Developer** | Subagent `developer` (Gemini Flash) | Business logic, state management (Web: React Query/Zustand; Mobile: Riverpod/Bloc/Zustand), API wiring, container components, platform permissions. | **STRICT BOUNDARY:** Does NOT run build commands, does NOT run tests, and does NOT write unit tests. |
+| **4. Code Reviewer** | Subagent `code_reviewer` (Gemini Flash) | Audits code against `01_PRD.md` and `02_UI_SPEC.md` (UI fidelity check, mobile safe areas, touch targets, clean code, security). | Does not write feature code; outputs PASS or REVISE feedback. |
+| **5. QA & Build Tester** | Subagent `qa_verifier` (Gemini Flash) | Executes compiler & build pipeline: Web (`tsc`, `npm run build`), Mobile Flutter (`flutter analyze`, `flutter build`), Mobile RN (`npx expo export`, `tsc`). | Does not invent features; focuses on compilation and runtime integrity. |
+| **6. Unit Test Engineer** | Subagent `unit_tester` (Gemini Flash) | Writes unit tests (`*.test.ts`, `*_test.dart`) and runs test runner. | **ON-DEMAND ONLY:** Only invoked when PM specifies `needs_unit_tests: true`. |
 
 ---
 
-## 2. Dual-Engine Planning: Who Creates the Plan?
-Before creating a plan, the PM Agent evaluates which engine possesses the required reasoning depth:
-
-| Planning Engine | Best For | Typical Use Cases |
-|---|---|---|
-| **Codex (GPT-Frontier)** | High architectural ambiguity, complex domain logic, multi-tier state machines, major UI/UX redesigns. | New feature screens, financial calculations, intricate authentication flows, system refactoring. |
-| **Gemini Flash (Local PM)** | Straightforward, well-patterned, or localized modifications. Instant execution with 0 handoff latency. | CRUD endpoints, standard form fields, text/style patches, bugfixes with clear reproduction steps. |
+## 2. Cross-Platform UX/UI Standards (Web & Mobile)
+When designing and implementing for **Mobile (Flutter / React Native / Native)**:
+- **Ergonomics & Touch Targets:** All interactive elements must adhere to minimum touch targets ($\ge 44 \times 44$ pt on iOS, $\ge 48 \times 48$ dp on Android).
+- **Safe Area Insets:** Account for notches, dynamic islands, system status bars, and home indicator gestures (`SafeArea`, `useSafeAreaInsets`).
+- **Platform Idioms:** Respect native conventions (Bottom Navigation Bar vs Drawer, Cupertino back swipe gestures vs Android back button).
+- **Styling Architecture:**
+  - Web: Tailwind CSS / CSS Modules.
+  - React Native: NativeWind / StyleSheet.
+  - Flutter: Custom theme constants, Material 3 / Cupertino widget compositions.
 
 ---
 
-## 3. Granular Task-Level Delegation (Within the Same Plan)
-A plan is not monolithic. In `03_TASKS.md`, each individual task is tagged with its optimal executor:
+## 3. The Universal Planning Invariant (No Ghost Commits)
+- Every single task—regardless of size or platform—MUST have a Plan and an updated record in `.agents/features/<slug>/01_PRD.md` and `03_TASKS.md`.
+- No code is ever written without an explicit task and acceptance criteria.
 
-- `[DELEGATE: CODEX-UI]`: Component wireframes, Tailwind styling, visual aesthetics, responsive tokens. Codex produces Presentational Component Skeletons.
-- `[DELEGATE: CODEX-LOGIC]`: Intricate business logic, algorithmic pseudocode, edge-case definitions.
-- `[DELEGATE: GEMINI-DEV]`: Heavy lifting implementation—wiring state, calling APIs, assembling components, form validation. Strictly NO tests/builds.
+---
+
+## 4. Dual-Engine Planning: Who Creates the Plan?
+- **Codex (GPT-Frontier) Planner:** High architectural ambiguity, complex domain logic, new mobile app screens, navigation stacks, design systems.
+- **Gemini Flash (Local PM):** Standard CRUD endpoints, localized mobile component adjustments, text/style patches, straightforward bugfixes.
+
+---
+
+## 5. Granular Task-Level Delegation (Within the Same Plan)
+- `[DELEGATE: CODEX-UI]`: Component wireframes, mobile/web layout, styling, presentational component skeletons.
+- `[DELEGATE: CODEX-LOGIC]`: Intricate business logic, algorithmic pseudocode, complex mobile state machines.
+- `[DELEGATE: GEMINI-DEV]`: Heavy lifting implementation (state wiring, API calls, platform hooks). Strictly NO tests/builds.
 - `[DELEGATE: GEMINI-REVIEW]`: Code audit comparing code diff against `01_PRD.md` and `02_UI_SPEC.md`.
-- `[DELEGATE: GEMINI-QA]`: Compiler gatekeeper (`tsc --noEmit`, `npm run lint`, `npm run build`).
+- `[DELEGATE: GEMINI-QA]`: Compiler gatekeeper (Web: `tsc`, `build`; Mobile: `flutter analyze`, `tsc`).
 - `[DELEGATE: GEMINI-UNIT-TEST]`: (On-demand) Writing and running unit tests when `needs_unit_tests: true`.
 
 ---
 
-## 4. The 3 Dynamic Execution Paths
-
-```text
-Path 1: Quick Patch (Hotfix / Micro)
-Intake & Doc Log -> Gemini Plan -> [GEMINI-DEV] -> [GEMINI-QA] -> Complete
-
-Path 2: Complex Logic / API (No major UI redesign)
-Intake & Doc Log -> Codex or Gemini Plan -> [CODEX-LOGIC (if hard)] -> [GEMINI-DEV] -> [GEMINI-REVIEW] -> [GEMINI-QA]
-
-Path 3: Full-Stack Feature (Rich UI + Logic)
-Intake & Doc Log -> Codex Plan & UI Spec -> [CODEX-UI] + [GEMINI-DEV] -> [GEMINI-REVIEW] -> [GEMINI-QA] -> (Unit Test)
-```
-
----
-
-## 5. Strict Physical Concurrency & Zero-Branch-Hopping Rule
+## 6. Strict Physical Concurrency & Zero-Branch-Hopping Rule
 - **No Branch Hopping:** NEVER run `git checkout <other-branch>` in the shared working directory.
-- **Directory Isolation:** Confine all changes strictly to `.agents/features/<slug>/` and `src/features/<slug>/`.
+- **Directory Isolation:** Confine all changes strictly to `.agents/features/<slug>/` and `src/features/<slug>/` (or `lib/features/<slug>/` in Flutter).

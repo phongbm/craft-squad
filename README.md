@@ -1,50 +1,49 @@
 # CraftXTech Multi-Agent Orchestrator Kit 🚀
 
 > **Hệ thống điều phối đội ngũ 6 AI Agent chuyên nghiệp (PM, UX/UI Designer, Developer, Code Reviewer, QA Verifier, Unit Tester).**  
-> Kết hợp mô hình **Dual-Engine Planning** (Lập kế hoạch 2 tầng giữa Codex và Gemini) và **Granular Task Delegation** (Phân bổ công việc chi tiết theo từng dòng task).
+> Hỗ trợ đa nền tảng **Web & Mobile (Flutter, React Native, Next.js, Web)**, kết hợp mô hình **Dual-Engine Planning** và **Granular Task Delegation**.
 
 ---
 
-## 🎯 2 Trụ Cột Kiến Trúc Cốt Lõi
+## 📱 Cross-Platform: UX/UI Cho Cả Web Lẫn Mobile
 
-### 1. Nguyên Tắc Bất Biến: Mọi Task Đều Phải Có Plan (Universal Planning)
-* Tuyệt đối không có commit "chui" không vết tích.
-* Dù là sửa 1 chữ text hay 1 class CSS (Hotfix), hệ thống đều ghi nhận vào `.agents/features/<slug>/01_PRD.md` (mục Changelog) và tạo 1 task rõ ràng trong `03_TASKS.md`. Đảm bảo 100% khả năng truy vết (Traceability).
+Hệ thống không giới hạn ở Web HTML/CSS. Vai trò **UX/UI Designer (Codex Astra)** và **Developer (Gemini)** được tối ưu hóa cho cả ứng dụng di động:
 
-### 2. Dual-Engine Planning: AI Nào Sẽ Lập Kế Hoạch?
-* **Codex (GPT-Frontier) Planner:** Dùng cho bài toán trừu tượng cao, kiến trúc hệ thống mới, luồng dữ liệu đa tầng hoặc thiết kế giao diện lớn từ đầu.
-* **Gemini Flash Planner:** Dùng cho các bài toán rõ ràng, theo khuôn mẫu, CRUD hoặc bugfix cục bộ. Thực hiện tức thì trong 2 giây, không tốn bước copy-paste.
+* **Mobile App (Flutter / Dart):**
+  * Codex Astra xuất cấu trúc Widget Tree, Theme constants, Safe Area, Touch targets ($\ge 48\text{dp}$), Bottom sheets, Navigation Stack.
+  * Gemini Developer lắp ráp State Management (Riverpod, Bloc), gọi API và xử lý data.
+  * QA Verifier chạy `flutter analyze` và `flutter test`.
+* **Mobile App (React Native / Expo):**
+  * Codex Astra xuất Component JSX với NativeWind hoặc StyleSheet, tính toán Safe Area Insets.
+  * Gemini Developer quản lý State (Zustand, React Query) và tích hợp native hooks.
+  * QA Verifier kiểm tra typecheck và bundle.
+* **Web Application (React / Next.js / Tailwind):**
+  * Quy trình chuẩn Tailwind CSS, Flex/Grid, responsive breakpoints.
 
 ---
 
-## 👥 Phân Bổ Nhiệm Vụ Chi Tiết (Granular Task Delegation)
+## 👥 Đội Ngũ 6 Role Chuyên Biệt
 
-Trong file `03_TASKS.md`, từng task được gắn thẻ rõ ràng cho đúng model:
+| Role | Model | Trách nhiệm (Web & Mobile) | Ranh giới nghiêm ngặt |
+|---|:---:|---|---|
+| **1. PM & Orchestrator** | Gemini Flash | Brainstorm, khóa scope, xác định nền tảng (Web/Mobile), chọn pipeline. | Không viết code trực tiếp. |
+| **2. Lead UX/UI Designer** | **Codex Astra** | **Thiết kế UI/UX đa nền tảng**: Web Tailwind, Flutter Widgets, React Native, Mobile UX (Safe Area, Touch targets $\ge 48\text{dp}$). | **Chỉ xuất Presentational Component**. Không làm backend/database. |
+| **3. Software Developer** | Gemini Flash | Lắp logic, state (React Query, Riverpod, Bloc), gọi API, routing. | **CHỈ VIẾT CODE:** Tuyệt đối không tự chạy build, không tự test, không viết unit test. |
+| **4. Code Reviewer** | Gemini Flash | Soát lỗi code, kiểm tra độ trung thực với UI Spec của Astra, mobile ergonomics. | Không viết code tính năng; phán quyết PASS hoặc REVISE. |
+| **5. QA Build Verifier** | Gemini Flash | Chạy kiểm tra biên dịch: Web (`tsc`, `build`), Flutter (`flutter analyze`), RN (`expo export`). | Không sáng tạo tính năng; đảm bảo build xanh 100%. |
+| **6. Unit Test Engineer** | Gemini Flash | Viết bài test logic (`*.test.ts`, `*_test.dart`) và chạy test runner. | **CHỈ CHẠY KHI CÓ YÊU CẦU** (`needs_unit_tests: true`). |
+
+---
+
+## ⚡ Dual-Engine Planning & Granular Task Delegation
 
 ```markdown
-- [ ] Task 1: [DELEGATE: CODEX-UI] Xuất Presentational Component JSX & Tailwind
-- [ ] Task 2: [DELEGATE: CODEX-LOGIC] Thuật toán tính toán nghiệp vụ phức tạp
-- [ ] Task 3: [DELEGATE: GEMINI-DEV] Lắp ráp State, kết nối API, Form validation
+- [ ] Task 1: [DELEGATE: CODEX-UI] Xuất Presentational UI (Flutter Widget / React Native / Web Tailwind)
+- [ ] Task 2: [DELEGATE: CODEX-LOGIC] Thuật toán tính toán nghiệp vụ / State machine phức tạp
+- [ ] Task 3: [DELEGATE: GEMINI-DEV] Lắp ráp State, kết nối API, Form validation (Chỉ viết code)
 - [ ] Task 4: [DELEGATE: GEMINI-REVIEW] Code Review & UI Audit đối chiếu với Spec
-- [ ] Task 5: [DELEGATE: GEMINI-QA] Build & Typecheck (tsc --noEmit, build)
+- [ ] Task 5: [DELEGATE: GEMINI-QA] Build & Typecheck (tsc / flutter analyze)
 - [ ] Task 6: [DELEGATE: GEMINI-UNIT-TEST] (On-Demand) Viết Unit Test nếu có yêu cầu
-```
-
----
-
-## ⚡ 3 Con Đường Thực Thi Linh Hoạt (Flexible Paths)
-
-```mermaid
-flowchart TD
-    User["Yêu Cầu Từ Bạn"] --> Step1["BƯỚC 1: Luôn cập nhật 01_PRD.md / Changelog"]
-    
-    Step1 --> PathChoice{"Lựa Chọn Con Đường Thực Thi"}
-    
-    PathChoice -->|"Path 1: Cấp tốc (Hotfix/Text)"| P1["Gemini Fast Plan\n-> [GEMINI-DEV]\n-> [GEMINI-QA]\n-> Xong (15 giây)"]
-    
-    PathChoice -->|"Path 2: Heavy Logic (Không có UI mới)"| P2["Codex Plan (Logic hóc búa)\n-> [CODEX-LOGIC] Pseudocode\n-> [GEMINI-DEV] Code\n-> [GEMINI-REVIEW] -> [GEMINI-QA]"]
-    
-    PathChoice -->|"Path 3: Full Feature (UI + Logic)"| P3["Codex Plan & UI Blueprint\n-> [CODEX-UI] Component Shell\n-> [GEMINI-DEV] Ráp State & API\n-> [GEMINI-REVIEW] -> [GEMINI-QA]"]
 ```
 
 ---
@@ -60,23 +59,23 @@ craftxtech-agent/
 ├── templates/
 │   ├── plugin.json                # Manifest Plugin
 │   ├── rules/
-│   │   └── AGENTS.md              # Bộ quy tắc Dual-Engine & Task Delegation
+│   │   └── AGENTS.md              # Quy tắc 6 Role, Web & Mobile, Concurrency
 │   ├── skills/                    # 6 Skills chuyên trách
 │   │   ├── pm-orchestrator/
 │   │   ├── architect-router/
 │   │   ├── dev-executor/
 │   │   ├── code-reviewer/
-│   │   ├── qa-verifier/
+│   │   ├── qa-verifier/           # Hỗ trợ Web, Flutter, React Native
 │   │   └── unit-tester/
 │   └── project-scaffold/          # Bộ khung .agents/ đặt trong dự án
 │       ├── STATE.json
 │       ├── features/
 │       │   └── sample-feature/
 │       │       ├── 01_PRD.md
-│       │       ├── 02_UI_SPEC.md
+│       │       ├── 02_UI_SPEC.md  # Chuẩn UI Spec Web & Mobile
 │       │       ├── 03_TASKS.md
 │       │       └── STATE.json
-│       ├── HANDOFF_TO_ASTRA.md
+│       ├── HANDOFF_TO_ASTRA.md    # Handoff đa nền tảng
 │       ├── HANDOFF_TO_CODEX_PLANNER.md
 │       ├── HANDOFF_TO_CHATGPT.md
 │       └── git-hooks/
@@ -94,4 +93,4 @@ npx craftxtech-agent init
 ```
 1. Mở Antigravity trên điện thoại (Thread 1) để tương tác với PM.
 2. Mở Codex trên điện thoại (Thread 2) để nhận các task `[DELEGATE: CODEX-...]`.
-3. Mọi công việc cày cuốc code, review, test và build do Gemini Flash tự động xử lý!
+3. Cho dù dự án là **Web (Next.js)** hay **Mobile App (Flutter / React Native)**, đội ngũ Agent đều tự động nhận diện và áp dụng đúng tiêu chuẩn kỹ thuật!
