@@ -1,0 +1,64 @@
+#!/bin/sh
+# CraftXTech Multi-Agent Git Hook
+# Tự động cập nhật .agents/STATE.json và gửi thông báo push về điện thoại
+
+LAST_COMMIT_MSG=$(git log -1 --pretty=%B)
+
+if [ -f ".agents/STATE.json" ]; then
+  # 1. Phát hiện commit từ Antigravity PM
+  if echo "$LAST_COMMIT_MSG" | grep -q "\[AG-PM\]"; then
+    echo "⚡ [Hook]: Phát hiện PRD mới từ Antigravity PM."
+    node -e '
+      const fs = require("fs");
+      try {
+        const state = JSON.parse(fs.readFileSync(".agents/STATE.json", "utf8"));
+        state.phase = "AWAITING_ASTRA";
+        state.last_actor = "antigravity_pm";
+        state.updated_at = new Date().toISOString();
+        fs.writeFileSync(".agents/STATE.json", JSON.stringify(state, null, 2));
+        if (state.notification_channel) {
+          const https = require("https");
+          const req = https.request("https://ntfy.sh/" + state.notification_channel, { method: "POST" });
+          req.write("PM đã commit PRD! Hãy mở Codex gõ /next");
+          req.end();
+        }
+      } catch(e) {}
+    '
+  fi
+
+  # 2. Phát hiện commit từ Codex Astra
+  if echo "$LAST_COMMIT_MSG" | grep -q "\[CODEX-ASTRA\]"; then
+    echo "⚡ [Hook]: Phát hiện UI Spec mới từ Codex Astra."
+    node -e '
+      const fs = require("fs");
+      try {
+        const state = JSON.parse(fs.readFileSync(".agents/STATE.json", "utf8"));
+        state.phase = "AWAITING_DEV";
+        state.last_actor = "codex_astra";
+        state.updated_at = new Date().toISOString();
+        fs.writeFileSync(".agents/STATE.json", JSON.stringify(state, null, 2));
+        if (state.notification_channel) {
+          const https = require("https");
+          const req = https.request("https://ntfy.sh/" + state.notification_channel, { method: "POST" });
+          req.write("Astra đã lên Plan xong! Mở Antigravity gõ /next");
+          req.end();
+        }
+      } catch(e) {}
+    '
+  fi
+
+  # 3. Phát hiện commit từ QA Verifier
+  if echo "$LAST_COMMIT_MSG" | grep -q "\[AG-QA\]"; then
+    echo "⚡ [Hook]: Toàn bộ task đã PASS kiểm thử!"
+    node -e '
+      const fs = require("fs");
+      try {
+        const state = JSON.parse(fs.readFileSync(".agents/STATE.json", "utf8"));
+        state.phase = "COMPLETED";
+        state.last_actor = "antigravity_qa";
+        state.updated_at = new Date().toISOString();
+        fs.writeFileSync(".agents/STATE.json", JSON.stringify(state, null, 2));
+      } catch(e) {}
+    '
+  fi
+fi

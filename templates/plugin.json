@@ -1,0 +1,11 @@
+{
+  "name": "craftxtech-agent",
+  "version": "1.0.0",
+  "description": "CraftXTech Multi-Agent Orchestrator: Autonomous PM, Complexity Router, Astra UI Specifier, Gemini Developer, and QA Verifier.",
+  "displayName": "CraftXTech Agent Team",
+  "suggestedPrompts": [
+    "Khởi tạo dự án mới và brainstorm cùng PM",
+    "Kiểm tra file .agents/STATE.json và triển khai tiếp",
+    "Chạy QA Verifier kiểm tra build và lint"
+  ]
+}
