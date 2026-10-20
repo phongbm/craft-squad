@@ -1,57 +1,53 @@
 # CRAFTXTECH MULTI-AGENT PROTOCOL & OPERATING SYSTEM
 
-This rule defines the complete engineering team architecture, role boundaries, and dynamic workflow pipelines.
+This rule defines the engineering team architecture, dual-engine planning system, and granular task delegation matrix.
 
 ---
 
-## 1. The 6-Role Software Engineering Team
-
-| Role | Agent / Model | Single Responsibility | Boundaries (What NOT to do) |
-|---|---|---|---|
-| **1. PM & Lead Orchestrator** | Antigravity (Gemini Flash) | Brainstorming, scope lock, complexity classification, dynamic pipeline routing. | Does not write application code directly. |
-| **2. Lead UX/UI Designer** | Codex Astra | Visual design, responsive layout, Tailwind tokens, Presentational Component Skeletons. | Does not write heavy backend logic or database queries. |
-| **3. Software Developer** | Subagent `developer` (Gemini Flash) | Business logic, state management, API wiring, container components. | **STRICT BOUNDARY:** Does NOT run `npm run build`, does NOT run `npm test`, and does NOT write unit tests. |
-| **4. Code Reviewer** | Subagent `code_reviewer` (Gemini Flash) | Audits code against `01_PRD.md` and `02_UI_SPEC.md` (UI fidelity check), clean code, security. | Does not write feature code; outputs PASS or REVISE feedback. |
-| **5. QA & Build Tester** | Subagent `qa_verifier` (Gemini Flash) | Executes compiler & build pipeline: `npx tsc --noEmit`, `npm run lint`, `npm run build`. | Does not invent features; focuses on compilation and runtime integrity. |
-| **6. Unit Test Engineer** | Subagent `unit_tester` (Gemini Flash) | Writes unit tests (`*.test.ts`, `*.spec.tsx`) and runs `npm test`. | **ON-DEMAND ONLY:** Only invoked when PM specifies `needs_unit_tests: true`. |
+## 1. The Universal Planning Invariant (No Ghost Commits)
+**Every single task—regardless of size—MUST have a Plan and an updated record in the documentation.**
+- Even a 1-line typo fix, button text change, or minor CSS tweak must update `.agents/features/<slug>/01_PRD.md` (or changelog section) and define a task in `03_TASKS.md`.
+- No code is ever written without an explicit task and acceptance criteria. This maintains 100% auditability and eliminates documentation drift.
 
 ---
 
-## 2. Dynamic Adaptive Routing (Complexity-Aware Pipeline)
+## 2. Dual-Engine Planning: Who Creates the Plan?
+Before creating a plan, the PM Agent evaluates which engine possesses the required reasoning depth:
 
-The system does **NOT** force every task through a heavy pipeline. The PM dynamically selects the minimal viable pipeline based on complexity:
+| Planning Engine | Best For | Typical Use Cases |
+|---|---|---|
+| **Codex (GPT-Frontier)** | High architectural ambiguity, complex domain logic, multi-tier state machines, major UI/UX redesigns. | New feature screens, financial calculations, intricate authentication flows, system refactoring. |
+| **Gemini Flash (Local PM)** | Straightforward, well-patterned, or localized modifications. Instant execution with 0 handoff latency. | CRUD endpoints, standard form fields, text/style patches, bugfixes with clear reproduction steps. |
+
+---
+
+## 3. Granular Task-Level Delegation (Within the Same Plan)
+A plan is not monolithic. In `03_TASKS.md`, each individual task is tagged with its optimal executor:
+
+- `[DELEGATE: CODEX-UI]`: Component wireframes, Tailwind styling, visual aesthetics, responsive tokens. Codex produces Presentational Component Skeletons.
+- `[DELEGATE: CODEX-LOGIC]`: Intricate business logic, algorithmic pseudocode, edge-case definitions.
+- `[DELEGATE: GEMINI-DEV]`: Heavy lifting implementation—wiring state, calling APIs, assembling components, form validation. Strictly NO tests/builds.
+- `[DELEGATE: GEMINI-REVIEW]`: Code audit comparing code diff against `01_PRD.md` and `02_UI_SPEC.md`.
+- `[DELEGATE: GEMINI-QA]`: Compiler gatekeeper (`tsc --noEmit`, `npm run lint`, `npm run build`).
+- `[DELEGATE: GEMINI-UNIT-TEST]`: (On-demand) Writing and running unit tests when `needs_unit_tests: true`.
+
+---
+
+## 4. The 3 Dynamic Execution Paths
 
 ```text
-Task Assessment:
-├── Level 0 (Trivial / Hotfix / Text tweak)
-│   └── Pipeline: Developer -> QA Verifier -> Complete (Skip Astra, Skip Review, Skip Unit Test)
-│
-├── Level 1 (Logic / API / CRUD - No UI changes)
-│   └── Pipeline: Developer -> Code Reviewer -> QA Verifier -> (Optional Unit Tester)
-│
-├── Level 2 (Visual / Decor Asset required)
-│   └── Pipeline: ChatGPT (DALL-E 3) -> Developer -> QA Verifier
-│
-└── Level 3 (Major Feature / New UI Screen / Complex Design)
-    └── Pipeline: Codex Astra (UX/UI) -> Developer -> Code Reviewer -> QA Verifier -> (Optional Unit Tester)
+Path 1: Quick Patch (Hotfix / Micro)
+Intake & Doc Log -> Gemini Plan -> [GEMINI-DEV] -> [GEMINI-QA] -> Complete
+
+Path 2: Complex Logic / API (No major UI redesign)
+Intake & Doc Log -> Codex or Gemini Plan -> [CODEX-LOGIC (if hard)] -> [GEMINI-DEV] -> [GEMINI-REVIEW] -> [GEMINI-QA]
+
+Path 3: Full-Stack Feature (Rich UI + Logic)
+Intake & Doc Log -> Codex Plan & UI Spec -> [CODEX-UI] + [GEMINI-DEV] -> [GEMINI-REVIEW] -> [GEMINI-QA] -> (Unit Test)
 ```
 
 ---
 
-## 3. Strict Physical Concurrency & Zero-Branch-Hopping Rule
-When working in the shared workspace directory:
-- **No Branch Hopping:** NEVER run `git checkout <other-branch>` in the active working directory.
-- **Directory Isolation:**
-  - Feature docs: `.agents/features/<feature-slug>/`
-  - Feature code: `src/features/<feature-slug>/` (or designated component paths)
-
----
-
-## 4. Git Commit Convention
-When committing changes, prefix commits with the role and feature slug:
-- `[AG-PM](<slug>):` Requirements & PRD updates
-- `[CODEX-ASTRA](<slug>):` UI & Design System specifications
-- `[AG-DEV](<slug>):` Pure feature implementation
-- `[AG-REVIEW](<slug>):` Code review approvals / audit
-- `[AG-TEST](<slug>):` Unit tests additions
-- `[AG-QA](<slug>):` Build verification and release gate
+## 5. Strict Physical Concurrency & Zero-Branch-Hopping Rule
+- **No Branch Hopping:** NEVER run `git checkout <other-branch>` in the shared working directory.
+- **Directory Isolation:** Confine all changes strictly to `.agents/features/<slug>/` and `src/features/<slug>/`.

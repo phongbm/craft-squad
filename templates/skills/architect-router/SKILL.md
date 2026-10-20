@@ -1,21 +1,29 @@
 ---
 name: architect-router
 description: >-
-  System architecture and dynamic pipeline routing skill. Evaluates project complexity (Level 0 to 3)
-  and constructs the minimal viable execution pipeline.
+  System architecture and task routing skill. Evaluates whether planning requires Codex or Gemini,
+  and breaks down features into granular tasks tagged by optimal model capability.
 ---
 
 # Architect & Router Runbook
 
-## Dynamic Complexity Matrix
+## 1. Dual-Engine Planning Matrix
 
-| Level | Đặc điểm task | Pipeline kích hoạt | Mô tả |
-|---|---|---|---|
-| **Level 0: Micro / Hotfix** | Đổi text, sửa chính tả, đổi 1 class CSS, sửa 1 dòng config | `developer` -> `qa_verifier` | Bỏ qua Astra, Reviewer, Unit Test. Nhanh nhất có thể. |
-| **Level 1: Logic / Backend / API** | Viết API, xử lý dữ liệu, logic tính toán, CRUD | `developer` -> `code_reviewer` -> `qa_verifier` *(+ `unit_tester` nếu yêu cầu)* | Không đụng giao diện lớn, bỏ qua Astra. |
-| **Level 2: Visual Decor** | Cần ảnh minh họa, hero banner, icon mới | `chatgpt_dalle` -> `developer` -> `qa_verifier` | Sinh ảnh bằng ChatGPT -> Dev lắp vào -> QA kiểm tra. |
-| **Level 3: Major UI Feature** | Giao diện mới, màn hình mới, design system, component phức tạp | `codex_astra` -> `developer` -> `code_reviewer` -> `qa_verifier` *(+ `unit_tester` nếu yêu cầu)* | Đầy đủ đội ngũ. Astra thiết kế UI, Gemini cày logic & test. |
+| Tiêu chí | Gemini Planner (Local) | Codex Planner (Frontier) |
+|---|---|---|
+| **Độ phức tạp bài toán** | Thấp đến trung bình, có mẫu rõ ràng. | Cao, nhiều tầng nghiệp vụ, trừu tượng. |
+| **Phạm vi thay đổi** | Cục bộ 1-3 files, fix bug, CRUD chuẩn. | Hệ thống mới, luồng dữ liệu mới, UI/UX mới. |
+| **Độ trễ & Thao tác** | Tức thì trong 2s, 0 thao tác copy-paste. | Cần 1 lần copy-paste qua app Codex. |
 
-## Pipeline Rule
-- Không bao giờ chạy full pipeline cho một task đơn giản (Level 0).
-- Tiết kiệm token và thời gian tối đa: Chỉ gọi đúng các agent cần thiết cho phạm vi task.
+## 2. Granular Task Tagging Matrix
+
+Khi lập `03_TASKS.md`, phân bổ từng task theo đúng sở trường:
+
+| Thẻ phân bổ | Model thực hiện | Nội dung công việc |
+|---|:---:|---|
+| `[DELEGATE: CODEX-UI]` | Codex Astra | Tạo khung JSX/HTML, Tailwind classes, Responsive breakpoints, Props interface. |
+| `[DELEGATE: CODEX-LOGIC]` | Codex Astra | Viết thuật toán khó, luồng state phức tạp, xử lý dữ liệu nhiều bước (Pseudocode). |
+| `[DELEGATE: GEMINI-DEV]` | Gemini Flash | Lắp ráp UI + Logic thành code hoàn chỉnh, nối state, fetch API, validation. *(Không test/build)*. |
+| `[DELEGATE: GEMINI-REVIEW]` | Gemini Flash | So sánh code diff với UI Spec và PRD, kiểm tra clean code & bảo mật. |
+| `[DELEGATE: GEMINI-QA]` | Gemini Flash | Chạy `npx tsc --noEmit`, `npm run lint`, `npm run build`. |
+| `[DELEGATE: GEMINI-UNIT-TEST]` | Gemini Flash | Viết `*.test.ts` và chạy `npm test` khi có yêu cầu từ PM. |
