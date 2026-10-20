@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * CraftXTech Agent File Watcher
+ * CraftSquad File Watcher
  * Tự động theo dõi các file Handoff trong .agents/ (hỗ trợ cả multi-feature subdirectories)
  * và phát hiện khi Astra hoặc PM vừa hoàn thành nhiệm vụ.
  */
@@ -14,7 +14,7 @@ const agentsDir = path.join(process.cwd(), '.agents');
 const stateFile = path.join(agentsDir, 'STATE.json');
 
 if (!fs.existsSync(agentsDir)) {
-  console.error('❌ Không tìm thấy thư mục .agents/. Hãy chạy `npx craftxtech-agent init` trước.');
+  console.error('❌ Không tìm thấy thư mục .agents/. Hãy chạy `npx craft-squad init` trước.');
   process.exit(1);
 }
 
@@ -43,7 +43,7 @@ function sendPushNotification(message, channel) {
       method: 'POST',
       headers: {
         'Content-Type': 'text/plain',
-        'Title': 'CraftXTech Agent Alert'
+        'Title': 'CraftSquad Alert'
       }
     },
     (res) => {}
@@ -53,21 +53,18 @@ function sendPushNotification(message, channel) {
   req.end();
 }
 
-console.log('👀 CraftXTech Watcher đang lắng nghe thư mục .agents/...');
-console.log('💡 Hỗ trợ tự động nhận diện cả thư mục features/<slug>/ đa tính năng.');
+console.log('👀 CraftSquad Watcher đang lắng nghe thư mục .agents/...');
+console.log('💡 Hỗ trợ tự động nhận diện cả thư mục features/<slug>/ đa tính năng (Web & Mobile).');
 
 let debounceTimeout = null;
 
-// Bật recursive: true để lắng nghe cả các thư mục con trong features/<slug>/
 try {
   fs.watch(agentsDir, { recursive: true }, (eventType, rawFilename) => {
     if (!rawFilename) return;
 
-    // Chuẩn hóa dấu phân cách đường dẫn (/ thay vì \)
     const normalizedPath = rawFilename.replace(/\\/g, '/');
     const baseName = path.basename(normalizedPath);
 
-    // Xác định xem file thay đổi có phải 02_UI_SPEC.md hay 01_PRD.md không
     if (baseName !== '02_UI_SPEC.md' && baseName !== '01_PRD.md') return;
 
     if (debounceTimeout) clearTimeout(debounceTimeout);
@@ -77,9 +74,8 @@ try {
       if (!fs.existsSync(fullPath)) return;
 
       const stats = fs.statSync(fullPath);
-      if (stats.size < 50) return; // Bỏ qua file rỗng hoặc file đang ghi dở
+      if (stats.size < 50) return;
 
-      // Trích xuất feature slug nếu file nằm trong features/<slug>/
       let slug = 'default';
       const parts = normalizedPath.split('/');
       if (parts[0] === 'features' && parts.length >= 3) {
@@ -91,7 +87,6 @@ try {
       const nowIso = new Date().toISOString();
 
       if (baseName === '02_UI_SPEC.md') {
-        // Cập nhật root state
         if (!rootState.active_features) rootState.active_features = {};
         if (!rootState.active_features[slug]) rootState.active_features[slug] = {};
         rootState.active_features[slug].phase = 'AWAITING_DEV';
@@ -99,7 +94,6 @@ try {
         rootState.active_features[slug].updated_at = nowIso;
         saveState(stateFile, rootState);
 
-        // Cập nhật feature-specific state nếu tồn tại
         const featureStatePath = path.join(agentsDir, 'features', slug, 'STATE.json');
         if (fs.existsSync(path.dirname(featureStatePath))) {
           const featState = loadState(featureStatePath);
@@ -114,7 +108,6 @@ try {
         sendPushNotification(`Astra đã lên UI Spec cho [${slug}]! Antigravity có thể triển khai code ngay.`, notifyChannel);
 
       } else if (baseName === '01_PRD.md') {
-        // Cập nhật root state
         if (!rootState.active_features) rootState.active_features = {};
         if (!rootState.active_features[slug]) rootState.active_features[slug] = {};
         rootState.active_features[slug].phase = 'AWAITING_ASTRA';
@@ -122,7 +115,6 @@ try {
         rootState.active_features[slug].updated_at = nowIso;
         saveState(stateFile, rootState);
 
-        // Cập nhật feature-specific state nếu tồn tại
         const featureStatePath = path.join(agentsDir, 'features', slug, 'STATE.json');
         if (fs.existsSync(path.dirname(featureStatePath))) {
           const featState = loadState(featureStatePath);

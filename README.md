@@ -1,13 +1,13 @@
-# CraftXTech Multi-Agent Orchestrator Kit 🚀
+# CraftSquad 🚀
 
-> **Hệ thống điều phối đội ngũ 6 AI Agent chuyên nghiệp (PM, UX/UI Designer, Developer, Code Reviewer, QA Verifier, Unit Tester).**  
-> Hỗ trợ đa nền tảng **Web & Mobile (Flutter, React Native, Next.js, Web)**, kết hợp mô hình **Dual-Engine Planning** và **Granular Task Delegation**.
+> **The 6-Role Autonomous Software Engineering Squad for Web & Mobile.**  
+> Hỗ trợ đa nền tảng **Web & Mobile (Flutter, React Native, Next.js)**, điều phối thông minh với mô hình **Dual-Engine Planning** và **Granular Task Delegation**.
 
 ---
 
 ## 📱 Cross-Platform: UX/UI Cho Cả Web Lẫn Mobile
 
-Hệ thống không giới hạn ở Web HTML/CSS. Vai trò **UX/UI Designer (Codex Astra)** và **Developer (Gemini)** được tối ưu hóa cho cả ứng dụng di động:
+CraftSquad không giới hạn ở Web HTML/CSS. Vai trò **UX/UI Designer (Codex Astra)** và **Developer (Gemini)** được tối ưu hóa cho cả ứng dụng di động:
 
 * **Mobile App (Flutter / Dart):**
   * Codex Astra xuất cấu trúc Widget Tree, Theme constants, Safe Area, Touch targets ($\ge 48\text{dp}$), Bottom sheets, Navigation Stack.
@@ -51,9 +51,9 @@ Hệ thống không giới hạn ở Web HTML/CSS. Vai trò **UX/UI Designer (Co
 ## 📂 Cấu Trúc Repo
 
 ```text
-craftxtech-agent/
+craft-squad/
 ├── bin/
-│   └── cli.js                     # CLI cài đặt tự động (npx craftxtech-agent init)
+│   └── cli.js                     # CLI cài đặt tự động (npx craft-squad init)
 ├── scripts/
 │   └── watcher.js                 # File watcher đệ quy đa tính năng
 ├── templates/
@@ -89,8 +89,8 @@ craftxtech-agent/
 ## 🚀 Cài Đặt và Sử Dụng
 
 ```bash
-npx craftxtech-agent init
+npx craft-squad init
 ```
 1. Mở Antigravity trên điện thoại (Thread 1) để tương tác với PM.
 2. Mở Codex trên điện thoại (Thread 2) để nhận các task `[DELEGATE: CODEX-...]`.
-3. Cho dù dự án là **Web (Next.js)** hay **Mobile App (Flutter / React Native)**, đội ngũ Agent đều tự động nhận diện và áp dụng đúng tiêu chuẩn kỹ thuật!
+3. Cho dù dự án là **Web (Next.js)** hay **Mobile App (Flutter / React Native)**, CraftSquad đều tự động nhận diện và áp dụng đúng tiêu chuẩn kỹ thuật!

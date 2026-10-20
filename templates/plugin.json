@@ -1,11 +1,11 @@
 {
-  "name": "craftxtech-agent",
+  "name": "craft-squad",
   "version": "1.0.0",
-  "description": "CraftXTech Multi-Agent Orchestrator: Autonomous PM, Complexity Router, Astra UI Specifier, Gemini Developer, and QA Verifier.",
-  "displayName": "CraftXTech Agent Team",
+  "description": "CraftSquad: The 6-Role Software Engineering Team for Web & Mobile (PM, UX/UI Designer, Developer, Code Reviewer, QA Verifier, Unit Tester).",
+  "displayName": "CraftSquad",
   "suggestedPrompts": [
-    "Khởi tạo dự án mới và brainstorm cùng PM",
-    "Kiểm tra file .agents/STATE.json và triển khai tiếp",
-    "Chạy QA Verifier kiểm tra build và lint"
+    "Khởi tạo feature mới cùng PM CraftSquad",
+    "Kiểm tra .agents/STATE.json và triển khai tiếp",
+    "Chạy QA Verifier kiểm tra build dự án"
   ]
 }

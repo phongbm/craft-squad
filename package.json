@@ -1,20 +1,23 @@
 {
-  "name": "craftxtech-agent",
+  "name": "craft-squad",
   "version": "1.0.0",
-  "description": "Enterprise Multi-Agent Orchestration Kit (PM, Astra Architect, Gemini Dev, QA) for Antigravity & Codex",
+  "description": "CraftSquad: The 6-Role Autonomous Software Engineering Squad for Antigravity & Codex (Web & Mobile)",
   "main": "bin/cli.js",
   "bin": {
-    "craftxtech-agent": "./bin/cli.js"
+    "craft-squad": "./bin/cli.js"
   },
   "keywords": [
+    "craft-squad",
     "antigravity",
     "codex",
     "multi-agent",
     "pm",
-    "architect",
+    "ux-designer",
+    "flutter",
+    "react-native",
     "orchestrator",
     "mobile-remote",
-    "craftxtech"
+    "squad"
   ],
   "author": "CraftXTech Team",
   "license": "MIT",

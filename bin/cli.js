@@ -3,7 +3,6 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { execSync } = require('child_process');
 
 const args = process.argv.slice(2);
 const command = args[0] || 'init';
@@ -30,9 +29,8 @@ function copyRecursiveSync(src, dest) {
 
 function installGlobalPlugin() {
   console.log('📦 Đang cài đặt Global Plugin vào Antigravity...');
-  const targetGlobalDir = path.join(userHome, '.gemini', 'config', 'plugins', 'craftxtech-agent');
+  const targetGlobalDir = path.join(userHome, '.gemini', 'config', 'plugins', 'craft-squad');
 
-  // Copy manifest, rules, skills
   if (!fs.existsSync(targetGlobalDir)) {
     fs.mkdirSync(targetGlobalDir, { recursive: true });
   }
@@ -45,7 +43,7 @@ function installGlobalPlugin() {
 }
 
 function initProjectScaffold() {
-  console.log('🚀 Đang khởi tạo bộ khung Multi-Agent (.agents/) trong dự án hiện tại...');
+  console.log('🚀 Đang khởi tạo bộ khung CraftSquad (.agents/) trong dự án hiện tại...');
   const targetProjectAgentsDir = path.join(process.cwd(), '.agents');
   const scaffoldSourceDir = path.join(templatesDir, 'project-scaffold');
 
@@ -59,7 +57,6 @@ function initProjectScaffold() {
     const hookTarget = path.join(gitHooksDir, 'post-commit');
     try {
       fs.copyFileSync(hookSource, hookTarget);
-      // Ensure executable permissions on unix-like systems
       try { fs.chmodSync(hookTarget, '755'); } catch (e) {}
       console.log('✅ Đã tự động kích hoạt Git Hook tại: .git/hooks/post-commit');
     } catch (err) {
@@ -84,15 +81,15 @@ switch (command) {
   case 'setup':
   default:
     console.log('\n======================================================');
-    console.log('🌟 CraftXTech Multi-Agent Orchestrator Setup 🌟');
+    console.log('🌟 CraftSquad: Autonomous Engineering Team 🌟');
     console.log('======================================================\n');
     installGlobalPlugin();
     initProjectScaffold();
     console.log('\n🎉 HOÀN TẤT THIẾT LẬP!');
     console.log('📌 Hướng dẫn sử dụng:');
-    console.log('1. Mở Antigravity Web trên điện thoại -> Giữ 1 Thread duy nhất cho PM.');
-    console.log('2. Mở Codex trên điện thoại -> Giữ 1 Thread duy nhất cho Astra.');
-    console.log('3. Hai agent sẽ tự động giao tiếp đồng bộ qua file .agents/STATE.json và Git!\n');
+    console.log('1. Mở Antigravity trên điện thoại -> Giữ 1 Thread duy nhất cho PM.');
+    console.log('2. Mở Codex trên điện thoại -> Giữ 1 Thread duy nhất cho UX/UI Designer.');
+    console.log('3. Hai agent tự động đồng bộ qua .agents/STATE.json và Git (hỗ trợ cả Web & Mobile)!\n');
     break;
 
   case 'watch':

@@ -1,6 +1,6 @@
-# CRAFTXTECH MULTI-AGENT PROTOCOL & OPERATING SYSTEM
+# CRAFTSQUAD MULTI-AGENT PROTOCOL & OPERATING SYSTEM
 
-This rule defines the engineering team architecture, cross-platform capabilities (Web & Mobile), dual-engine planning system, and granular task delegation matrix.
+This rule defines the engineering team architecture, cross-platform capabilities (Web & Mobile), dual-engine planning system, and granular task delegation matrix for CraftSquad.
 
 ---
 
