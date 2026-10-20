@@ -2,7 +2,7 @@
 
 /**
  * CraftXTech Agent File Watcher
- * Tự động theo dõi các file Handoff trong .agents/
+ * Tự động theo dõi các file Handoff trong .agents/ (hỗ trợ cả multi-feature subdirectories)
  * và phát hiện khi Astra hoặc PM vừa hoàn thành nhiệm vụ.
  */
 
@@ -18,19 +18,19 @@ if (!fs.existsSync(agentsDir)) {
   process.exit(1);
 }
 
-function loadState() {
+function loadState(filePath) {
   try {
-    return JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
   } catch (e) {
-    return { phase: 'IDLE' };
+    return {};
   }
 }
 
-function saveState(state) {
+function saveState(filePath, state) {
   try {
-    fs.writeFileSync(stateFile, JSON.stringify(state, null, 2), 'utf8');
+    fs.writeFileSync(filePath, JSON.stringify(state, null, 2), 'utf8');
   } catch (e) {
-    console.error('Lỗi khi lưu STATE.json:', e.message);
+    console.error('Lỗi khi lưu state file:', filePath, e.message);
   }
 }
 
@@ -54,43 +54,90 @@ function sendPushNotification(message, channel) {
 }
 
 console.log('👀 CraftXTech Watcher đang lắng nghe thư mục .agents/...');
-console.log('💡 Khi Codex Astra lưu 02_UI_SPEC.md hoặc PM lưu 01_PRD.md, trạng thái sẽ tự động cập nhật.');
+console.log('💡 Hỗ trợ tự động nhận diện cả thư mục features/<slug>/ đa tính năng.');
 
 let debounceTimeout = null;
 
-fs.watch(agentsDir, (eventType, filename) => {
-  if (!filename) return;
+// Bật recursive: true để lắng nghe cả các thư mục con trong features/<slug>/
+try {
+  fs.watch(agentsDir, { recursive: true }, (eventType, rawFilename) => {
+    if (!rawFilename) return;
 
-  if (debounceTimeout) clearTimeout(debounceTimeout);
+    // Chuẩn hóa dấu phân cách đường dẫn (/ thay vì \)
+    const normalizedPath = rawFilename.replace(/\\/g, '/');
+    const baseName = path.basename(normalizedPath);
 
-  debounceTimeout = setTimeout(() => {
-    const state = loadState();
-    const notifyChannel = state.notification_channel || '';
+    // Xác định xem file thay đổi có phải 02_UI_SPEC.md hay 01_PRD.md không
+    if (baseName !== '02_UI_SPEC.md' && baseName !== '01_PRD.md') return;
 
-    if (filename === '02_UI_SPEC.md') {
-      const stats = fs.statSync(path.join(agentsDir, '02_UI_SPEC.md'));
-      if (stats.size > 50) {
-        state.phase = 'AWAITING_DEV';
-        state.last_actor = 'codex_astra';
-        state.updated_at = new Date().toISOString();
-        saveState(state);
+    if (debounceTimeout) clearTimeout(debounceTimeout);
 
-        console.log('\n⚡ [WATCHER]: Phát hiện Astra vừa cập nhật 02_UI_SPEC.md!');
+    debounceTimeout = setTimeout(() => {
+      const fullPath = path.join(agentsDir, normalizedPath);
+      if (!fs.existsSync(fullPath)) return;
+
+      const stats = fs.statSync(fullPath);
+      if (stats.size < 50) return; // Bỏ qua file rỗng hoặc file đang ghi dở
+
+      // Trích xuất feature slug nếu file nằm trong features/<slug>/
+      let slug = 'default';
+      const parts = normalizedPath.split('/');
+      if (parts[0] === 'features' && parts.length >= 3) {
+        slug = parts[1];
+      }
+
+      const rootState = loadState(stateFile);
+      const notifyChannel = rootState.notification_channel || '';
+      const nowIso = new Date().toISOString();
+
+      if (baseName === '02_UI_SPEC.md') {
+        // Cập nhật root state
+        if (!rootState.active_features) rootState.active_features = {};
+        if (!rootState.active_features[slug]) rootState.active_features[slug] = {};
+        rootState.active_features[slug].phase = 'AWAITING_DEV';
+        rootState.active_features[slug].last_actor = 'codex_astra';
+        rootState.active_features[slug].updated_at = nowIso;
+        saveState(stateFile, rootState);
+
+        // Cập nhật feature-specific state nếu tồn tại
+        const featureStatePath = path.join(agentsDir, 'features', slug, 'STATE.json');
+        if (fs.existsSync(path.dirname(featureStatePath))) {
+          const featState = loadState(featureStatePath);
+          featState.phase = 'AWAITING_DEV';
+          featState.last_actor = 'codex_astra';
+          featState.updated_at = nowIso;
+          saveState(featureStatePath, featState);
+        }
+
+        console.log(`\n⚡ [WATCHER]: Phát hiện Astra vừa cập nhật UI Spec cho [${slug}]!`);
         console.log('👉 Trạng thái chuyển thành: AWAITING_DEV');
-        sendPushNotification('Astra đã cập nhật UI Spec! Antigravity có thể triển khai code ngay.', notifyChannel);
-      }
-    } else if (filename === '01_PRD.md') {
-      const stats = fs.statSync(path.join(agentsDir, '01_PRD.md'));
-      if (stats.size > 50) {
-        state.phase = 'AWAITING_ASTRA';
-        state.last_actor = 'antigravity_pm';
-        state.updated_at = new Date().toISOString();
-        saveState(state);
+        sendPushNotification(`Astra đã lên UI Spec cho [${slug}]! Antigravity có thể triển khai code ngay.`, notifyChannel);
 
-        console.log('\n⚡ [WATCHER]: Phát hiện PM vừa cập nhật 01_PRD.md!');
+      } else if (baseName === '01_PRD.md') {
+        // Cập nhật root state
+        if (!rootState.active_features) rootState.active_features = {};
+        if (!rootState.active_features[slug]) rootState.active_features[slug] = {};
+        rootState.active_features[slug].phase = 'AWAITING_ASTRA';
+        rootState.active_features[slug].last_actor = 'antigravity_pm';
+        rootState.active_features[slug].updated_at = nowIso;
+        saveState(stateFile, rootState);
+
+        // Cập nhật feature-specific state nếu tồn tại
+        const featureStatePath = path.join(agentsDir, 'features', slug, 'STATE.json');
+        if (fs.existsSync(path.dirname(featureStatePath))) {
+          const featState = loadState(featureStatePath);
+          featState.phase = 'AWAITING_ASTRA';
+          featState.last_actor = 'antigravity_pm';
+          featState.updated_at = nowIso;
+          saveState(featureStatePath, featState);
+        }
+
+        console.log(`\n⚡ [WATCHER]: Phát hiện PM vừa cập nhật PRD cho [${slug}]!`);
         console.log('👉 Trạng thái chuyển thành: AWAITING_ASTRA');
-        sendPushNotification('PM đã cập nhật PRD! Mở Codex để Astra lên UI Plan.', notifyChannel);
+        sendPushNotification(`PM đã cập nhật PRD cho [${slug}]! Mở Codex để Astra lên UI Plan.`, notifyChannel);
       }
-    }
-  }, 500);
-});
+    }, 500);
+  });
+} catch (err) {
+  console.error('Lỗi khởi động Watcher:', err.message);
+}

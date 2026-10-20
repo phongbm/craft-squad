@@ -1,0 +1,11 @@
+{
+  "feature_slug": "sample-feature",
+  "phase": "IDLE",
+  "last_actor": "system",
+  "updated_at": "2026-10-20T12:00:00Z",
+  "artifacts": {
+    "prd": "01_PRD.md",
+    "ui_spec": "02_UI_SPEC.md",
+    "tasks": "03_TASKS.md"
+  }
+}

@@ -1,64 +1,79 @@
 #!/bin/sh
 # CraftXTech Multi-Agent Git Hook
-# Tự động cập nhật .agents/STATE.json và gửi thông báo push về điện thoại
+# Tự động nhận diện Feature Slug, cập nhật STATE.json và gửi thông báo push về điện thoại
 
 LAST_COMMIT_MSG=$(git log -1 --pretty=%B)
 
 if [ -f ".agents/STATE.json" ]; then
-  # 1. Phát hiện commit từ Antigravity PM
-  if echo "$LAST_COMMIT_MSG" | grep -q "\[AG-PM\]"; then
-    echo "⚡ [Hook]: Phát hiện PRD mới từ Antigravity PM."
-    node -e '
-      const fs = require("fs");
-      try {
-        const state = JSON.parse(fs.readFileSync(".agents/STATE.json", "utf8"));
-        state.phase = "AWAITING_ASTRA";
-        state.last_actor = "antigravity_pm";
-        state.updated_at = new Date().toISOString();
-        fs.writeFileSync(".agents/STATE.json", JSON.stringify(state, null, 2));
-        if (state.notification_channel) {
-          const https = require("https");
-          const req = https.request("https://ntfy.sh/" + state.notification_channel, { method: "POST" });
-          req.write("PM đã commit PRD! Hãy mở Codex gõ /next");
-          req.end();
-        }
-      } catch(e) {}
-    '
-  fi
+  COMMIT_MSG="$LAST_COMMIT_MSG" node -e '
+    const fs = require("fs");
+    const path = require("path");
+    const https = require("https");
 
-  # 2. Phát hiện commit từ Codex Astra
-  if echo "$LAST_COMMIT_MSG" | grep -q "\[CODEX-ASTRA\]"; then
-    echo "⚡ [Hook]: Phát hiện UI Spec mới từ Codex Astra."
-    node -e '
-      const fs = require("fs");
-      try {
-        const state = JSON.parse(fs.readFileSync(".agents/STATE.json", "utf8"));
-        state.phase = "AWAITING_DEV";
-        state.last_actor = "codex_astra";
-        state.updated_at = new Date().toISOString();
-        fs.writeFileSync(".agents/STATE.json", JSON.stringify(state, null, 2));
-        if (state.notification_channel) {
-          const https = require("https");
-          const req = https.request("https://ntfy.sh/" + state.notification_channel, { method: "POST" });
-          req.write("Astra đã lên Plan xong! Mở Antigravity gõ /next");
-          req.end();
-        }
-      } catch(e) {}
-    '
-  fi
+    const commitMsg = process.env.COMMIT_MSG || "";
+    // Regex khớp: [TAG](slug): hoặc [TAG]:
+    const match = commitMsg.match(/\[(AG-PM|CODEX-ASTRA|AG-DEV|AG-QA)\](?:\(([^)]+)\))?/);
+    if (!match) process.exit(0);
 
-  # 3. Phát hiện commit từ QA Verifier
-  if echo "$LAST_COMMIT_MSG" | grep -q "\[AG-QA\]"; then
-    echo "⚡ [Hook]: Toàn bộ task đã PASS kiểm thử!"
-    node -e '
-      const fs = require("fs");
-      try {
-        const state = JSON.parse(fs.readFileSync(".agents/STATE.json", "utf8"));
-        state.phase = "COMPLETED";
-        state.last_actor = "antigravity_qa";
-        state.updated_at = new Date().toISOString();
-        fs.writeFileSync(".agents/STATE.json", JSON.stringify(state, null, 2));
-      } catch(e) {}
-    '
-  fi
+    const tag = match[1];
+    const slug = match[2] || "default";
+    const nowIso = new Date().toISOString();
+
+    const rootStateFile = path.join(".agents", "STATE.json");
+    let rootState = {};
+    try { rootState = JSON.parse(fs.readFileSync(rootStateFile, "utf8")); } catch(e) {}
+    if (!rootState.active_features) rootState.active_features = {};
+    if (!rootState.active_features[slug]) rootState.active_features[slug] = {};
+
+    let newPhase = "";
+    let lastActor = "";
+    let notifyText = "";
+
+    if (tag === "AG-PM") {
+      newPhase = "AWAITING_ASTRA";
+      lastActor = "antigravity_pm";
+      notifyText = "PM đã commit PRD cho [" + slug + "]! Hãy mở Codex gõ /next";
+    } else if (tag === "CODEX-ASTRA") {
+      newPhase = "AWAITING_DEV";
+      lastActor = "codex_astra";
+      notifyText = "Astra đã lên Plan cho [" + slug + "]! Mở Antigravity gõ /next";
+    } else if (tag === "AG-DEV") {
+      newPhase = "VERIFYING";
+      lastActor = "antigravity_dev";
+    } else if (tag === "AG-QA") {
+      newPhase = "COMPLETED";
+      lastActor = "antigravity_qa";
+      notifyText = "Tính năng [" + slug + "] đã PASS toàn bộ kiểm thử!";
+    }
+
+    // 1. Cập nhật Root STATE.json
+    rootState.active_features[slug].phase = newPhase;
+    rootState.active_features[slug].last_actor = lastActor;
+    rootState.active_features[slug].updated_at = nowIso;
+    fs.writeFileSync(rootStateFile, JSON.stringify(rootState, null, 2));
+
+    // 2. Cập nhật Feature-specific STATE.json nếu tồn tại
+    const featStateFile = path.join(".agents", "features", slug, "STATE.json");
+    if (fs.existsSync(path.dirname(featStateFile))) {
+      let featState = {};
+      try { featState = JSON.parse(fs.readFileSync(featStateFile, "utf8")); } catch(e) {}
+      featState.phase = newPhase;
+      featState.last_actor = lastActor;
+      featState.updated_at = nowIso;
+      fs.writeFileSync(featStateFile, JSON.stringify(featState, null, 2));
+    }
+
+    console.log("⚡ [Hook]: Đã cập nhật trạng thái [" + slug + "] -> " + newPhase);
+
+    // 3. Gửi push notification nếu có channel
+    if (notifyText && rootState.notification_channel) {
+      const req = https.request("https://ntfy.sh/" + rootState.notification_channel, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain", "Title": "CraftXTech Agent Alert" }
+      });
+      req.on("error", () => {});
+      req.write(notifyText);
+      req.end();
+    }
+  '
 fi
