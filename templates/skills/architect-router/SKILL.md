@@ -1,27 +1,21 @@
 ---
 name: architect-router
 description: >-
-  System architecture and task routing skill. Evaluates project complexity and generates detailed
-  technical specifications and granular task breakdowns for developers.
+  System architecture and dynamic pipeline routing skill. Evaluates project complexity (Level 0 to 3)
+  and constructs the minimal viable execution pipeline.
 ---
 
 # Architect & Router Runbook
 
-## Complexity Classification Matrix
+## Dynamic Complexity Matrix
 
-| Level | Type | Routing Destination | Action |
+| Level | Đặc điểm task | Pipeline kích hoạt | Mô tả |
 |---|---|---|---|
-| **Level 1** | Standard logic, CRUD, bug fix, basic UI component | Gemini 3.8 Flash (Local) | Generates `02_UI_SPEC.md` and `03_TASKS.md` directly. |
-| **Level 2** | Decorative art, hero banners, 3D render mockups | ChatGPT Plus (DALL-E 3) | Generates `HANDOFF_TO_CHATGPT.md` with targeted prompt. |
-| **Level 3** | Complex UI/UX, responsive layouts, design systems | Codex Astra | Prepares `HANDOFF_TO_ASTRA.md` and updates `STATE.json`. |
+| **Level 0: Micro / Hotfix** | Đổi text, sửa chính tả, đổi 1 class CSS, sửa 1 dòng config | `developer` -> `qa_verifier` | Bỏ qua Astra, Reviewer, Unit Test. Nhanh nhất có thể. |
+| **Level 1: Logic / Backend / API** | Viết API, xử lý dữ liệu, logic tính toán, CRUD | `developer` -> `code_reviewer` -> `qa_verifier` *(+ `unit_tester` nếu yêu cầu)* | Không đụng giao diện lớn, bỏ qua Astra. |
+| **Level 2: Visual Decor** | Cần ảnh minh họa, hero banner, icon mới | `chatgpt_dalle` -> `developer` -> `qa_verifier` | Sinh ảnh bằng ChatGPT -> Dev lắp vào -> QA kiểm tra. |
+| **Level 3: Major UI Feature** | Giao diện mới, màn hình mới, design system, component phức tạp | `codex_astra` -> `developer` -> `code_reviewer` -> `qa_verifier` *(+ `unit_tester` nếu yêu cầu)* | Đầy đủ đội ngũ. Astra thiết kế UI, Gemini cày logic & test. |
 
-## UI Specification Standard (`02_UI_SPEC.md`)
-1. **Design Tokens:** Palette (HEX, RGB, Tailwind keys), border radius, shadow elevations.
-2. **Component Tree:** Strict hierarchy and file path mappings.
-3. **Props & Types:** Explicit TypeScript interfaces for all components.
-4. **Mock Fixtures:** JSON sample data for immediate development.
-
-## Task Breakdown Standard (`03_TASKS.md`)
-- Limit each task to under 150 lines of code.
-- Ensure strict dependency order (types -> stores/services -> atomic components -> page view).
-- Include precise Acceptance Criteria for each task.
+## Pipeline Rule
+- Không bao giờ chạy full pipeline cho một task đơn giản (Level 0).
+- Tiết kiệm token và thời gian tối đa: Chỉ gọi đúng các agent cần thiết cho phạm vi task.

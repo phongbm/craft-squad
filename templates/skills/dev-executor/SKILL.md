@@ -1,21 +1,24 @@
 ---
 name: dev-executor
 description: >-
-  Autonomous development execution skill. Reads task specifications from .agents/03_TASKS.md
-  or .agents/features/<slug>/03_TASKS.md and implements code strictly following architecture and design guidelines.
+  Autonomous development execution skill. Reads task specifications from 03_TASKS.md
+  and writes code cleanly. Strictly forbidden from running build commands or tests.
 ---
 
 # Developer Executor Runbook
 
-## Core Rules & Physical Concurrency
-1. **Directory Isolation:** Confine all code changes strictly to the feature namespace: `src/features/<feature-slug>/` or specified isolated component files.
-2. **Never Jump Branches:** Do NOT attempt to run `git checkout` or change git branches. Work strictly within the files assigned.
-3. **Strict Spec Compliance:** Never invent alternative component names or props. Follow `02_UI_SPEC.md` 1:1.
-4. **No Placeholders:** Avoid `// TODO` or truncated code snippets. Write complete, working code.
-5. **Clean Code:** Adhere to project linting, TypeScript strict mode, and CSS/Tailwind standards.
+## Core Rules & Strict Boundaries
+1. **CODE ONLY:** Nhiệm vụ duy nhất là viết mã nguồn (logic, state, markup, props).
+2. **STRICTLY NO TESTS / NO BUILDS:**
+   - **KHÔNG** tự ý chạy `npm run build` hoặc `npx tsc`. (Việc này do QA Verifier làm).
+   - **KHÔNG** tự ý chạy `npm test` hoặc viết unit test. (Việc này do Unit Tester làm khi có lệnh từ PM).
+3. **Tuân thủ 100% UI Spec:**
+   - Nếu có file `02_UI_SPEC.md` từ Codex Astra: giữ nguyên 100% class Tailwind, màu sắc, font chữ và props. Không tự ý chỉnh sửa thẩm mỹ.
+4. **Phạm vi cô lập:**
+   - Chỉ tạo/sửa file trong namespace được giao: `src/features/<feature-slug>/` hoặc các file chỉ định.
+   - Tuyệt đối không chạy `git checkout` đổi branch.
 
-## Execution Checklist
-1. Read the assigned task from `03_TASKS.md`.
-2. Inspect referenced types and existing components to ensure compatibility.
-3. Apply changes using precise file operations within the feature folder.
-4. Summarize created/modified files for the QA Verifier.
+## Execution Sequence
+1. Đọc task trong `03_TASKS.md`.
+2. Viết/sửa code hoàn chỉnh.
+3. Tóm tắt danh sách file đã thay đổi và bàn giao cho Code Reviewer / QA Verifier.

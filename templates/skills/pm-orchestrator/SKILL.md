@@ -1,39 +1,44 @@
 ---
 name: pm-orchestrator
 description: >-
-  Lead PM & Multi-Agent Orchestrator workflow for CraftXTech. Use when the user wants to brainstorm,
-  design, or orchestrate building features across subagents and external models.
+  Lead PM & Multi-Agent Orchestrator workflow for CraftXTech. Dynamically assesses task complexity,
+  constructs the minimal viable agent pipeline, and coordinates team execution.
 ---
 
 # CraftXTech PM Orchestrator Workflow
 
-## Phase 1: Interactive Brainstorming & Feature Slug Assignment
-1. Elicit requirements from the user.
-2. Determine a unique, lowercase kebab-case identifier for this feature (e.g. `feat-booking`, `feat-avatar`).
-3. Ensure the dedicated folder exists: `.agents/features/<feature-slug>/`.
-4. Ask 3-5 focused questions about:
-   - Target personas & main user journey.
-   - Core MVP requirements vs secondary features.
-   - Design guidelines (color theme, tone, target screen sizes).
-5. Synthesize into `.agents/features/<feature-slug>/01_PRD.md`.
-6. Initialize or update `.agents/features/<feature-slug>/STATE.json` with `phase: "AWAITING_ROUTING"`.
-7. Update root `.agents/STATE.json` to register this feature in `active_features`.
+## Phase 1: Intake & Complexity Assessment
+1. Listen to the user's request.
+2. Classify the task complexity level:
+   - **Level 0 (Micro/Hotfix):** Sửa lỗi chính tả, đổi text, sửa 1-2 dòng CSS/config.
+     -> Pipeline: `["developer", "qa_verifier"]` (Bỏ qua Astra, Reviewer, Unit Tester).
+   - **Level 1 (Logic / Backend / CRUD):** Viết API, xử lý data, không thay đổi giao diện lớn.
+     -> Pipeline: `["developer", "code_reviewer", "qa_verifier"]`.
+   - **Level 2 (Visual Asset / Decor):** Cần sinh ảnh minh họa / icon DALL-E.
+     -> Pipeline: `["chatgpt_dalle", "developer", "qa_verifier"]`.
+   - **Level 3 (Major Feature / New UI Screen):** Thiết kế mới, giao diện phức tạp, component mới.
+     -> Pipeline: `["codex_astra", "developer", "code_reviewer", "qa_verifier"]`.
+3. Kiểm tra xem có cần viết **Unit Test** không:
+   - Mặc định là `false`. Chỉ bật khi người dùng yêu cầu rõ ràng hoặc với core business calculation.
 
-## Phase 2: Routing Decision & Physical Isolation
-- **Physical Safety Rule:** Do NOT run `git checkout` to hop between branches if other chats or tools are actively operating in this workspace. Stay on the active working tree and rely on folder isolation: `src/features/<feature-slug>/`.
-- **If Level 3 (Complex Web/App UI):**
-  - Generate `.agents/features/<feature-slug>/HANDOFF_TO_ASTRA.md`.
-  - Update `.agents/features/<feature-slug>/STATE.json` (`phase: "AWAITING_ASTRA"`).
-  - Git commit with message `[AG-PM](<feature-slug>): update PRD`.
-  - Notify user: *"PRD cho feature `<feature-slug>` đã được lưu. Hãy mở thread Codex Astra gõ /next để lấy UI Spec."*
-- **If Level 1 (Local Gemini Execution):**
-  - Draft `.agents/features/<feature-slug>/02_UI_SPEC.md` and `.agents/features/<feature-slug>/03_TASKS.md` directly.
-  - Proceed straight to Phase 3.
+## Phase 2: Spec Creation & Handoff
+- Gán feature slug (ví dụ: `feat-booking`, `fix-typo-button`).
+- Tạo thư mục: `.agents/features/<slug>/`.
+- Ghi nhận `pipeline` và `needs_unit_tests` vào `.agents/features/<slug>/STATE.json`.
+- **Nếu pipeline có `codex_astra`:**
+  - Viết `01_PRD.md` và `HANDOFF_TO_ASTRA.md`.
+  - Thông báo để người dùng dán vào Codex Astra xin `02_UI_SPEC.md`.
+- **Nếu pipeline bỏ qua `codex_astra`:**
+  - PM tự lên task nhanh vào `03_TASKS.md` và chuyển thẳng sang thực thi.
 
-## Phase 3: Autonomous Implementation & Testing
-1. Iterate through `.agents/features/<feature-slug>/03_TASKS.md`:
-   - Invoke `developer` subagent, instructing it strictly to confine code to `src/features/<feature-slug>/` or dedicated components.
-2. Invoke `qa_verifier` subagent:
-   - Run typecheck, lint, and build commands.
-   - If tests fail, feed back to `developer`.
-3. When verified, update `.agents/features/<feature-slug>/STATE.json` (`phase: "COMPLETED"`) and commit with `[AG-QA](<feature-slug>): pass build and verification`.
+## Phase 3: Sequential Team Execution
+Chạy tuần tự các agent trong `pipeline`:
+1. **Developer Subagent:**
+   - Chỉ viết code, không chạy build/test.
+2. **Code Reviewer Subagent (nếu có trong pipeline):**
+   - So sánh code với PRD và UI Spec. Nếu vi phạm, yêu cầu Developer sửa lại.
+3. **QA Verifier Subagent:**
+   - Chạy `npx tsc --noEmit` và `npm run build` để kiểm tra toàn vẹn mã nguồn.
+4. **Unit Tester Subagent (chỉ chạy khi `needs_unit_tests == true`):**
+   - Viết bài test và chạy `npm test`.
+5. Đánh dấu `COMPLETED` và báo cáo kết quả ngắn gọn cho người dùng.

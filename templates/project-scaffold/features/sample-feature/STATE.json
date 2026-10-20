@@ -1,5 +1,13 @@
 {
   "feature_slug": "sample-feature",
+  "complexity_level": 3,
+  "pipeline": [
+    "codex_astra",
+    "developer",
+    "code_reviewer",
+    "qa_verifier"
+  ],
+  "needs_unit_tests": false,
   "phase": "IDLE",
   "last_actor": "system",
   "updated_at": "2026-10-20T12:00:00Z",

@@ -1,22 +1,22 @@
 ---
 name: qa-verifier
 description: >-
-  Automated testing, linting, build verification, and error remediation skill. Ensures code
-  changes meet quality standards and compiles cleanly.
+  Automated build verification, typechecking, and linting skill. Acts as the release gatekeeper
+  to ensure the project compiles and builds with exit code 0.
 ---
 
-# QA Verifier Runbook
+# QA & Build Verifier Runbook
 
-## Verification Sequence
-1. **Typecheck & Linter:**
-   - Execute TypeScript compiler check: `npx tsc --noEmit` or language equivalent.
-   - Run linter: `npm run lint` or `npm run check`.
-2. **Build Verification:**
-   - Run bundler/build tool: `npm run build` or framework check.
-3. **Automated Tests:**
-   - Run test suite: `npm test` (if tests exist).
+## Core Scope
+QA Verifier chịu trách nhiệm đảm bảo toàn bộ dự án **biên dịch thành công, không lỗi type, không lỗi syntax**.
+*(Lưu ý: Viết và chạy unit test riêng biệt thuộc về Unit Test Engineer)*.
 
-## Remediation Workflow
-- **Minor Issues:** For simple import typos, missing TypeScript property mappings, or Tailwind class typos, fix the file immediately.
-- **Major Issues:** If build fails with complex structural or logic errors, formulate a specific error report (file path, line number, exact error message) and request revisions from the Developer.
-- **Pass Gate:** Only mark `- [x]` in `.agents/03_TASKS.md` when the entire verification sequence passes with exit code 0.
+## Verification Checklist
+1. **TypeScript Typecheck:** `npx tsc --noEmit` (hoặc lệnh tương đương của ngôn ngữ).
+2. **Linting Check:** `npm run lint` hoặc `npm run check`.
+3. **Build Check:** `npm run build` (Next.js / Vite / React build).
+
+## Auto-Remediation & Pass Gate
+- Nếu gặp lỗi cú pháp nhẹ hoặc thiếu import: Tự động sửa trực tiếp.
+- Nếu gặp lỗi logic nặng: Báo cáo dòng lỗi và nguyên nhân cho Developer.
+- Chỉ xác nhận hoàn thành khi toàn bộ quy trình biên dịch trả về exit code 0.
