@@ -78,7 +78,29 @@ function startRpcServer({ name, version, tools, handleToolCall, logger }) {
         logger.info(`Executing tool call: ${toolName}`);
 
         const result = await handleToolCall(toolName, toolArgs);
-        sendResponse(id, result);
+        let formattedResult = result;
+        if (!result || !Array.isArray(result.content)) {
+          let text = '';
+          if (typeof result === 'string') {
+            text = result;
+          } else if (result?.output) {
+            text = typeof result.output === 'string' ? result.output : JSON.stringify(result.output, null, 2);
+          } else if (result?.stdout) {
+            text = result.stdout;
+          } else {
+            text = JSON.stringify(result, null, 2);
+          }
+          formattedResult = {
+            content: [
+              {
+                type: 'text',
+                text: text || ''
+              }
+            ],
+            isError: result?.success === false || result?.isError === true
+          };
+        }
+        sendResponse(id, formattedResult);
         return;
       }
 

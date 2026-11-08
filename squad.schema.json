@@ -1,111 +1,73 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "CraftSquad Configuration Schema",
-  "description": "Schema for CraftSquad Multi-Engine Multi-Agent Squad configuration",
+  "title": "CraftSquad Configuration",
+  "description": "Role-to-engine/model/effort bindings for a CraftSquad agent team. Skills never reference models; they are resolved from this file on every dispatch.",
   "type": "object",
+  "required": ["roles"],
   "properties": {
-    "$schema": {
-      "type": "string",
-      "description": "Link to the JSON schema file"
-    },
-    "version": {
-      "type": "string",
-      "description": "CraftSquad configuration schema version"
-    },
+    "$schema": { "type": "string" },
+    "version": { "type": "string" },
     "defaultReasoningEffort": {
       "type": "string",
       "enum": ["low", "medium", "high", "xhigh"],
       "default": "medium",
-      "description": "Default reasoning effort for non-Gemini roles (Codex, Claude)"
+      "description": "Effort for roles not covered by a more specific rule."
     },
     "geminiDefaultReasoningEffort": {
       "type": "string",
       "enum": ["low", "medium", "high", "xhigh"],
       "default": "high",
-      "description": "Default reasoning effort for Gemini roles (Gemini 3.8 Flash)"
+      "description": "Effort for roles running on the gemini engine."
+    },
+    "timeoutSeconds": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 360,
+      "description": "Default per-dispatch timeout."
+    },
+    "engineDefaults": {
+      "type": "object",
+      "description": "Model used by squad_set_role when no model is given.",
+      "additionalProperties": { "type": "string" }
     },
     "roles": {
       "type": "object",
-      "description": "Squad role definitions and model/engine bindings",
+      "description": "Role definitions. Known role ids get autocompletion; custom ids are allowed.",
       "properties": {
-        "scrum_master": {
-          "type": "object",
-          "description": "Sofia - BMAD Product Owner & Lead Scrum Master (PRD breakdown, User Stories, Sprints)",
-          "$ref": "#/definitions/roleConfig"
-        },
-        "architect": {
-          "type": "object",
-          "description": "Winston - BMAD System & DB Architect (Deep architecture, database schema, data contracts)",
-          "$ref": "#/definitions/roleConfig"
-        },
-        "ui_designer": {
-          "type": "object",
-          "description": "Sally - BMAD Lead UX/UI Designer (Presentational UI skeletons, design tokens)",
-          "$ref": "#/definitions/roleConfig"
-        },
-        "developer": {
-          "type": "object",
-          "description": "Amelia - BMAD Senior Full-Stack Developer (Business logic, endpoints, transactions, state wiring)",
-          "$ref": "#/definitions/roleConfig"
-        },
-        "code_reviewer": {
-          "type": "object",
-          "description": "Oliver - BMAD Adversarial Reviewer (Independent adversarial audit of code diffs)",
-          "$ref": "#/definitions/roleConfig"
-        },
-        "tester": {
-          "type": "object",
-          "description": "QA Test Engineer (Unit tests, integration tests, test vectors)",
-          "$ref": "#/definitions/roleConfig"
-        },
-        "qa_gatekeeper": {
-          "type": "object",
-          "description": "Deterministic Gatekeeper (Compiler, linter, tests, and build runner with exit code 0)",
-          "$ref": "#/definitions/roleConfig"
-        }
+        "spec_owner": { "$ref": "#/definitions/role" },
+        "scrum_master": { "$ref": "#/definitions/role" },
+        "architect": { "$ref": "#/definitions/role" },
+        "ui_designer": { "$ref": "#/definitions/role" },
+        "developer": { "$ref": "#/definitions/role" },
+        "code_reviewer": { "$ref": "#/definitions/role" },
+        "tester": { "$ref": "#/definitions/role" },
+        "rescue": { "$ref": "#/definitions/role" },
+        "qa_gatekeeper": { "$ref": "#/definitions/role" }
       },
-      "additionalProperties": {
-        "$ref": "#/definitions/roleConfig"
-      }
+      "additionalProperties": { "$ref": "#/definitions/role" }
     }
   },
-  "required": ["roles"],
   "definitions": {
-    "roleConfig": {
+    "role": {
       "type": "object",
+      "required": ["engine"],
       "properties": {
         "engine": {
           "type": "string",
           "enum": ["gemini", "codex", "claude", "cli"],
-          "description": "Execution engine for this role"
+          "description": "gemini = executed by the host agent; codex/claude = local CLI; cli = deterministic command."
         },
-        "model": {
-          "type": "string",
-          "description": "Model ID used by the engine (e.g. gpt-6.1-sol, claude-3-7-sonnet-latest, gemini-3.8-flash)"
-        },
-        "alias": {
-          "type": "string",
-          "description": "Short alias for user display"
-        },
+        "model": { "type": "string", "description": "Model id passed to the engine." },
         "defaultReasoningEffort": {
           "type": "string",
           "enum": ["low", "medium", "high", "xhigh"],
-          "description": "Role-specific default reasoning effort"
+          "description": "Role-specific default effort."
         },
-        "persona": {
-          "type": "string",
-          "description": "BMAD persona name and role title"
-        },
-        "description": {
-          "type": "string",
-          "description": "Role responsibility description"
-        },
-        "command": {
-          "type": "string",
-          "description": "Deterministic CLI command when engine is 'cli'"
-        }
-      },
-      "required": ["engine"]
+        "timeoutSeconds": { "type": "integer", "minimum": 1 },
+        "command": { "type": "string", "description": "Command to run when engine is cli." },
+        "title": { "type": "string" },
+        "description": { "type": "string" }
+      }
     }
   }
 }

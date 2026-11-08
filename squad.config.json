@@ -1,57 +1,68 @@
 {
   "$schema": "./squad.schema.json",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "defaultReasoningEffort": "medium",
   "geminiDefaultReasoningEffort": "high",
+  "timeoutSeconds": 360,
+  "engineDefaults": {
+    "codex": "gpt-6.1-sol",
+    "claude": "claude-3-7-sonnet-latest",
+    "gemini": "gemini-3.8-flash"
+  },
   "roles": {
+    "spec_owner": {
+      "engine": "gemini",
+      "model": "gemini-3.8-flash",
+      "title": "Spec Owner (Product / Business Analyst)",
+      "description": "Owns the PRD and feature specs: user journeys, acceptance criteria, open questions, requirement changes."
+    },
     "scrum_master": {
       "engine": "gemini",
       "model": "gemini-3.8-flash",
-      "defaultReasoningEffort": "high",
-      "persona": "Sofia (BMAD Product Owner & Spec Owner)",
-      "description": "Phân rã PRD và tài liệu yêu cầu, quản lý Backlog, tạo User Stories & Tickets theo chuẩn GitHub Spec-Kit."
+      "title": "Scrum Master (Engineering Team Leader)",
+      "description": "Triages tasks, plans sprints/tasks, assigns roles, drives the dev-review-test loop, reports with evidence."
     },
     "architect": {
       "engine": "codex",
       "model": "gpt-6.1-sol",
-      "defaultReasoningEffort": "medium",
-      "persona": "Winston (BMAD System & DB Architect)",
-      "description": "Thiết kế kiến trúc hệ thống, schema delta, API validation contracts, và mô hình hóa dữ liệu."
+      "title": "Architect (System & Technical)",
+      "description": "Technical plan, data model, API contracts, architecture rules."
     },
     "ui_designer": {
       "engine": "codex",
       "model": "gpt-6-astra",
-      "defaultReasoningEffort": "medium",
-      "persona": "Sally (BMAD Lead UX/UI Designer)",
-      "description": "Thiết kế Component UI Skeletons, Design Tokens, Layouts, Responsive UI, và tối ưu UX."
+      "title": "UI Designer (UX/UI)",
+      "description": "UX flow, design tokens, presentational component skeletons."
     },
     "developer": {
       "engine": "claude",
       "model": "claude-3-7-sonnet-latest",
-      "alias": "sonnet-5.5",
-      "defaultReasoningEffort": "medium",
-      "persona": "Amelia (BMAD Senior Full-Stack Developer)",
-      "description": "Lập trình backend business logic, API routes, database transactions, và đấu nối frontend state/UI theo đúng Architectural Contracts."
+      "title": "Developer (Full-Stack)",
+      "description": "Implements tasks to spec and contracts, with tests."
     },
     "code_reviewer": {
       "engine": "codex",
       "model": "gpt-6.1-sol",
-      "defaultReasoningEffort": "medium",
-      "persona": "Oliver (BMAD Adversarial Reviewer)",
-      "description": "Phản biện đối kháng độc lập, phát hiện lỗi biên (edge cases), lỗ hổng bảo mật và sai lệch Spec."
+      "title": "Code Reviewer (Adversarial)",
+      "description": "Independent adversarial review of diffs; PASS or REVISE REQUIRED."
     },
     "tester": {
       "engine": "gemini",
       "model": "gemini-3.8-flash",
-      "defaultReasoningEffort": "high",
-      "persona": "QA Test Engineer",
-      "description": "Tạo unit tests, API integration tests, và kịch bản đối soát dữ liệu."
+      "title": "Tester (QA Automation)",
+      "description": "Maps acceptance criteria to executable tests and reports real results."
+    },
+    "rescue": {
+      "engine": "codex",
+      "model": "gpt-6.1-sol",
+      "title": "Rescue (Root-Cause Engineer)",
+      "description": "Root-cause and fix for issues that failed two or more fix cycles."
     },
     "qa_gatekeeper": {
       "engine": "cli",
       "command": "npm test",
-      "persona": "Deterministic Gatekeeper",
-      "description": "Chạy lệnh kiểm tra deterministic (build/typecheck/tests) đảm bảo Exit Code 0 trước khi bàn giao."
+      "title": "QA Gatekeeper (Deterministic)",
+      "description": "Runs the configured verification command; exit code 0 is the only pass."
     }
   }
 }

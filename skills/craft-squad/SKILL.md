@@ -1,50 +1,42 @@
 ---
 name: craft-squad
-description: Master multi-agent agile orchestrator for Antigravity 2.0. Coordinates BMAD-METHOD personas (Sofia PO, Winston Architect, Sally UI Designer, Amelia Dev, Oliver Reviewer) and GitHub Spec-Kit formats with multi-engine execution (OpenAI Codex, Claude Code, Gemini 3.8 Flash).
+description: CraftSquad master orchestrator. Explains and runs the multi-role agent team (Spec Owner, Scrum Master, Architect, UI Designer, Developer, Code Reviewer, Tester, QA Gatekeeper, Rescue) with config-driven engines. Use for "run the squad", "which role does X", "change a role's model", /craft-squad.
 ---
 
-# CraftSquad v2.2 Master Orchestrator
+# CraftSquad
 
-Use this skill when developing features, refactoring, or managing agile sprints across Web and Mobile applications using an orchestrated multi-agent team.
+A role-based agent team. Roles, skills and who-calls-whom are fixed here; which engine, model and effort each role uses lives only in `squad.config.json` and is resolved on every `squad_dispatch`.
 
----
+## Roles and skills
+| Role id | Skill | Real-world equivalent |
+|---|---|---|
+| `spec_owner` | `/cs-spec-owner` | Product owner / BA: PRD, spec, acceptance criteria |
+| `scrum_master` | `/cs-scrum-master` | Engineering team lead: triage, plan, assign, drive loop, report |
+| `architect` | `/cs-architect` | Technical plan, data model, contracts |
+| `ui_designer` | `/cs-ui-designer` | UX flow, tokens, presentational skeletons |
+| `developer` | `/cs-developer` | Implementation with tests |
+| `code_reviewer` | `/cs-code-reviewer` | Independent adversarial review |
+| `tester` | `/cs-tester` | Executable verification of acceptance criteria |
+| `qa_gatekeeper` | `/cs-qa-gatekeeper` | Deterministic gate, exit code 0 |
+| `rescue` | `/cs-rescue` | Root-cause for stuck loops |
 
-## 🏛️ System Architecture
+## Flow
+```
+Request -> [new/changed requirement? -> Spec Owner -> spec] -> Scrum Master (triage + plan)
+   Route A: -> Developer
+   Route B: -> UI Designer -> Developer
+   Route C: -> Architect -> Developer
+   Route D: -> Architect + UI Designer -> Developer
+Developer -> Code Reviewer -> Tester -> QA Gatekeeper -> Scrum Master sign-off
+(2 failed cycles on one issue -> Rescue -> back into the loop)
+```
+Design roles are optional per task; review, test and gate are never optional.
 
-CraftSquad unifies the global standards of AI software development into a seamless, automated pipeline:
-1. **Personas & SOPs:** Authentic **BMAD-METHOD** personas (Sofia, Winston, Sally, Amelia, Oliver).
-2. **Artifact Standards:** Authentic **GitHub Spec-Kit** formats (`constitution.md`, `spec.md`, `plan.md`, `tasks.md`).
-3. **Execution Engine:** **CraftSquad Multi-Engine Dispatcher** dynamically routing tasks to specialized engines (OpenAI Codex, Claude Code, Antigravity Gemini Flash).
+## Configuration
+- Show: tool `squad_get_config` or `node bin/cli.js status`.
+- Change a role: tool `squad_set_role` or `node bin/cli.js config set <role> <engine> [model]`.
+- One-off effort: add `[effort: low|medium|high|xhigh]` to a prompt.
+- Gemini-engine roles default to the effort in `geminiDefaultReasoningEffort`; other roles to `defaultReasoningEffort`.
 
----
-
-## 👥 The Squad Matrix & Reasoning Effort Defaults
-
-Configured dynamically in `squad.config.json`:
-
-| Role | Persona | Engine | Model | Default Reasoning Effort | Prompt Override Example |
-|---|---|---|---|---|---|
-| **Scrum Master & PO** | Sofia | **Gemini** | `gemini-3.8-flash` | **`high`** (Default for Gemini) | `[effort: low]` |
-| **System Architect** | Winston | **Codex** | `gpt-6.1-sol` | **`medium`** | `[effort: high]` |
-| **Lead UX/UI Designer** | Sally | **Codex** | `gpt-6-astra` | **`medium`** | `[effort: high]` |
-| **Full-Stack Developer** | Amelia | **Claude** | `claude-3-7-sonnet-latest` | **`medium`** | `[effort: high]` |
-| **Adversarial Reviewer** | Oliver | **Codex** | `gpt-6.1-sol` | **`medium`** | `[effort: high]` |
-| **QA Test Engineer** | Tester | **Gemini** | `gemini-3.8-flash` | **`high`** (Default for Gemini) | `[effort: medium]` |
-| **QA Gatekeeper** | Gatekeeper | **CLI** | Configurable (e.g. `npm test`) | N/A (Deterministic) | N/A |
-
-> **Reasoning Effort Rules:**
-> 1. Roles utilizing **Gemini 3.8 Flash** default to **`high`**.
-> 2. Other roles default to **`medium`**.
-> 3. Any role can be overridden on the fly by appending `[effort: high]`, `[effort: medium]`, `[effort: low]`, or `[effort: xhigh]` directly into the prompt.
-
----
-
-## ⚡ Available Commands & Skills
-
-* `/bmad-sprint`: Sofia breaks down PRD and creates user stories in GitHub Spec-Kit format.
-* `/bmad-architect`: Winston designs schema deltas and API contracts.
-* `/bmad-ui`: Sally produces presentational UI skeletons and responsive components.
-* `/bmad-dev`: Amelia implements business logic according to frozen contracts.
-* `/bmad-review`: Oliver performs adversarial code review finding edge cases.
-* `/bmad-qa`: Gatekeeper verifies compiler, tests, and build scripts (exit code 0).
-* `/bmad-rescue`: Escalates stuck debugging loops to frontier reasoning.
+## Standards
+Role personas, methods and document templates are read at runtime from upstream BMAD-METHOD (`templates/bmad/`) and GitHub Spec-Kit (`templates/speckit/`); refresh with `npm run sync:upstream`. Provenance: `UPSTREAM_EVIDENCE.md`.

@@ -10,7 +10,7 @@ const command = args[0] || 'status';
 
 const userHome = os.homedir();
 const packageRootDir = path.resolve(__dirname, '..');
-const { resolveConfig, dispatchRole } = require('../mcp-server/modules/dispatcher');
+const { resolveConfig, dispatchRole, setRole, detectReasoningEffort } = require('../mcp-server/modules/dispatcher');
 
 function initProjectConfig(targetDir = process.cwd()) {
   const targetConfig = path.join(targetDir, 'squad.config.json');
@@ -77,45 +77,31 @@ function installGlobalPlugin() {
 function printConfig() {
   const { config, filePath } = resolveConfig(process.cwd());
   console.log('\n=================================================================');
-  console.log('📋 CraftSquad Active Role & Engine Configuration Matrix');
+  console.log('CraftSquad role / engine configuration');
   console.log('=================================================================');
-  console.log(`Source: ${filePath || 'Default Package Config'}`);
-  console.log(`Default Reasoning Effort: ${config.defaultReasoningEffort || 'medium'}\n`);
+  console.log(`Source: ${filePath}`);
+  console.log(`Default effort: ${config.defaultReasoningEffort || 'medium'} | Gemini-engine effort: ${config.geminiDefaultReasoningEffort || 'high'}\n`);
 
-  console.log('| Role | Engine | Model / Command | Persona |');
-  console.log('|---|---|---|---|');
+  console.log('| Role | Engine | Model / Command | Effort | Title |');
+  console.log('|---|---|---|---|---|');
   for (const [role, data] of Object.entries(config.roles || {})) {
     const target = data.model || data.command || 'N/A';
-    console.log(`| \`${role}\` | **${data.engine}** | \`${target}\` | ${data.persona || ''} |`);
+    const effort = data.engine === 'cli' ? '-' : detectReasoningEffort('', null, data, config.defaultReasoningEffort, config.geminiDefaultReasoningEffort);
+    console.log(`| \`${role}\` | **${data.engine}** | \`${target}\` | ${effort} | ${data.title || ''} |`);
   }
-  console.log('\n💡 To reconfigure a role:');
-  console.log('  node bin/cli.js config set <role> <engine> [model]');
-  console.log('Example:');
-  console.log('  node bin/cli.js config set developer claude claude-3-7-sonnet-latest');
-  console.log('  node bin/cli.js config set code_reviewer codex gpt-6.1-sol\n');
+  console.log('\nReconfigure a role:');
+  console.log('  node bin/cli.js config set <role> <engine> [model] [effort]');
+  console.log('  e.g. node bin/cli.js config set developer claude <model> medium\n');
 }
 
-function setRoleConfig(role, engine, model) {
+function setRoleConfig(role, engine, model, effort) {
   if (!role || !engine) {
-    console.error('❌ Usage: node bin/cli.js config set <role> <engine> [model]');
+    console.error('Usage: node bin/cli.js config set <role> <engine> [model] [effort]');
     process.exit(1);
   }
-
-  const targetFile = path.join(process.cwd(), 'squad.config.json');
-  let currentConfig = resolveConfig(process.cwd()).config;
-
-  if (!currentConfig.roles) currentConfig.roles = {};
-  const roleKey = role.toLowerCase().replace(/[\s-]/g, '_');
-
-  currentConfig.roles[roleKey] = {
-    ...(currentConfig.roles[roleKey] || {}),
-    engine: engine.toLowerCase(),
-    model: model || (engine === 'codex' ? 'gpt-6.1-sol' : engine === 'claude' ? 'claude-3-7-sonnet-latest' : 'gemini-3.8-flash')
-  };
-
-  fs.writeFileSync(targetFile, JSON.stringify(currentConfig, null, 2), 'utf8');
-  console.log(`\n✅ Role "${roleKey}" updated in ${targetFile}`);
-  console.log(`   Engine: ${engine} | Model: ${currentConfig.roles[roleKey].model}\n`);
+  const res = setRole({ role, engine, model, reasoningEffort: effort, workingDirectory: process.cwd() });
+  console.log(`\nRole "${res.role}" updated in ${res.configPath}`);
+  console.log(`  ${JSON.stringify(res.settings)}\n`);
 }
 
 function checkEngineStatus() {
@@ -170,7 +156,7 @@ switch (command) {
   case 'config': {
     const subCmd = args[1];
     if (subCmd === 'set') {
-      setRoleConfig(args[2], args[3], args[4]);
+      setRoleConfig(args[2], args[3], args[4], args[5]);
     } else {
       printConfig();
     }
@@ -186,11 +172,19 @@ switch (command) {
 
   case 'dispatch':
   case 'test-dispatch': {
-    const role = args[1] || 'code_reviewer';
-    const prompt = args[2] || 'Say "CraftSquad Dispatcher operational" in 5 words or less.';
-    console.log(`\n🚀 Testing dispatch to role: ${role}`);
-    console.log(`Prompt: "${prompt}"\n`);
-    dispatchRole(role, prompt, { workingDirectory: process.cwd() })
+    // usage: dispatch <role> "<prompt>" [--dry] [--artifact=<type>]
+    const flags = args.filter((a) => a.startsWith('--'));
+    const pos = args.slice(1).filter((a) => !a.startsWith('--'));
+    const role = pos[0] || 'code_reviewer';
+    const prompt = pos[1] || 'Reply with one short sentence confirming you are reachable.';
+    const dryRun = flags.includes('--dry');
+    const artifactFlag = flags.find((f) => f.startsWith('--artifact='));
+    console.log(`\nDispatching to role: ${role}${dryRun ? ' (dry run)' : ''}`);
+    dispatchRole(role, prompt, {
+      workingDirectory: process.cwd(),
+      dryRun,
+      artifactType: artifactFlag ? artifactFlag.split('=')[1] : undefined
+    })
       .then((res) => {
         console.log('\n--- Dispatch Result ---');
         console.log('Role:', res.role);
@@ -198,10 +192,12 @@ switch (command) {
         console.log('Model:', res.model);
         console.log('Reasoning Effort:', res.reasoningEffort);
         console.log('Success:', res.success);
-        console.log('Output:\n' + res.output + '\n');
+        if (res.sources) console.log('Upstream sources used:\n  - ' + res.sources.join('\n  - '));
+        if (res.missingSources && res.missingSources.length) console.log('MISSING sources:\n  - ' + res.missingSources.join('\n  - '));
+        console.log('Output:\n' + (dryRun ? (res.compiledPrompt || res.command || '') : res.output) + '\n');
       })
       .catch((err) => {
-        console.error('❌ Dispatch failed:', err.message);
+        console.error('Dispatch failed:', err.message);
         process.exit(1);
       });
     break;
