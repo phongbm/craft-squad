@@ -1,0 +1,11 @@
+{
+  "name": "craft-squad",
+  "version": "2.2.0",
+  "displayName": "CraftSquad (BMAD Multi-Engine)",
+  "description": "Autonomous BMAD Agile Multi-Engine Agent Squad for Antigravity, OpenAI Codex, and Claude Code.",
+  "suggestedPrompts": [
+    "Plan a new Sprint with Sofia Scrum Master using GitHub Spec-Kit format",
+    "Design architecture and data contracts with Winston Architect (gpt-6.1-sol)",
+    "Implement feature logic with Amelia Developer (Claude Sonnet 3.7)"
+  ]
+}

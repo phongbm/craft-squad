@@ -1,0 +1,57 @@
+{
+  "$schema": "./squad.schema.json",
+  "version": "2.2.0",
+  "defaultReasoningEffort": "medium",
+  "geminiDefaultReasoningEffort": "high",
+  "roles": {
+    "scrum_master": {
+      "engine": "gemini",
+      "model": "gemini-3.8-flash",
+      "defaultReasoningEffort": "high",
+      "persona": "Sofia (BMAD Product Owner & Spec Owner)",
+      "description": "Phân rã PRD và tài liệu yêu cầu, quản lý Backlog, tạo User Stories & Tickets theo chuẩn GitHub Spec-Kit."
+    },
+    "architect": {
+      "engine": "codex",
+      "model": "gpt-6.1-sol",
+      "defaultReasoningEffort": "medium",
+      "persona": "Winston (BMAD System & DB Architect)",
+      "description": "Thiết kế kiến trúc hệ thống, schema delta, API validation contracts, và mô hình hóa dữ liệu."
+    },
+    "ui_designer": {
+      "engine": "codex",
+      "model": "gpt-6-astra",
+      "defaultReasoningEffort": "medium",
+      "persona": "Sally (BMAD Lead UX/UI Designer)",
+      "description": "Thiết kế Component UI Skeletons, Design Tokens, Layouts, Responsive UI, và tối ưu UX."
+    },
+    "developer": {
+      "engine": "claude",
+      "model": "claude-3-7-sonnet-latest",
+      "alias": "sonnet-5.5",
+      "defaultReasoningEffort": "medium",
+      "persona": "Amelia (BMAD Senior Full-Stack Developer)",
+      "description": "Lập trình backend business logic, API routes, database transactions, và đấu nối frontend state/UI theo đúng Architectural Contracts."
+    },
+    "code_reviewer": {
+      "engine": "codex",
+      "model": "gpt-6.1-sol",
+      "defaultReasoningEffort": "medium",
+      "persona": "Oliver (BMAD Adversarial Reviewer)",
+      "description": "Phản biện đối kháng độc lập, phát hiện lỗi biên (edge cases), lỗ hổng bảo mật và sai lệch Spec."
+    },
+    "tester": {
+      "engine": "gemini",
+      "model": "gemini-3.8-flash",
+      "defaultReasoningEffort": "high",
+      "persona": "QA Test Engineer",
+      "description": "Tạo unit tests, API integration tests, và kịch bản đối soát dữ liệu."
+    },
+    "qa_gatekeeper": {
+      "engine": "cli",
+      "command": "npm test",
+      "persona": "Deterministic Gatekeeper",
+      "description": "Chạy lệnh kiểm tra deterministic (build/typecheck/tests) đảm bảo Exit Code 0 trước khi bàn giao."
+    }
+  }
+}

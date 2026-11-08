@@ -1,0 +1,111 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CraftSquad Configuration Schema",
+  "description": "Schema for CraftSquad Multi-Engine Multi-Agent Squad configuration",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Link to the JSON schema file"
+    },
+    "version": {
+      "type": "string",
+      "description": "CraftSquad configuration schema version"
+    },
+    "defaultReasoningEffort": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "xhigh"],
+      "default": "medium",
+      "description": "Default reasoning effort for non-Gemini roles (Codex, Claude)"
+    },
+    "geminiDefaultReasoningEffort": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "xhigh"],
+      "default": "high",
+      "description": "Default reasoning effort for Gemini roles (Gemini 3.8 Flash)"
+    },
+    "roles": {
+      "type": "object",
+      "description": "Squad role definitions and model/engine bindings",
+      "properties": {
+        "scrum_master": {
+          "type": "object",
+          "description": "Sofia - BMAD Product Owner & Lead Scrum Master (PRD breakdown, User Stories, Sprints)",
+          "$ref": "#/definitions/roleConfig"
+        },
+        "architect": {
+          "type": "object",
+          "description": "Winston - BMAD System & DB Architect (Deep architecture, database schema, data contracts)",
+          "$ref": "#/definitions/roleConfig"
+        },
+        "ui_designer": {
+          "type": "object",
+          "description": "Sally - BMAD Lead UX/UI Designer (Presentational UI skeletons, design tokens)",
+          "$ref": "#/definitions/roleConfig"
+        },
+        "developer": {
+          "type": "object",
+          "description": "Amelia - BMAD Senior Full-Stack Developer (Business logic, endpoints, transactions, state wiring)",
+          "$ref": "#/definitions/roleConfig"
+        },
+        "code_reviewer": {
+          "type": "object",
+          "description": "Oliver - BMAD Adversarial Reviewer (Independent adversarial audit of code diffs)",
+          "$ref": "#/definitions/roleConfig"
+        },
+        "tester": {
+          "type": "object",
+          "description": "QA Test Engineer (Unit tests, integration tests, test vectors)",
+          "$ref": "#/definitions/roleConfig"
+        },
+        "qa_gatekeeper": {
+          "type": "object",
+          "description": "Deterministic Gatekeeper (Compiler, linter, tests, and build runner with exit code 0)",
+          "$ref": "#/definitions/roleConfig"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/definitions/roleConfig"
+      }
+    }
+  },
+  "required": ["roles"],
+  "definitions": {
+    "roleConfig": {
+      "type": "object",
+      "properties": {
+        "engine": {
+          "type": "string",
+          "enum": ["gemini", "codex", "claude", "cli"],
+          "description": "Execution engine for this role"
+        },
+        "model": {
+          "type": "string",
+          "description": "Model ID used by the engine (e.g. gpt-6.1-sol, claude-3-7-sonnet-latest, gemini-3.8-flash)"
+        },
+        "alias": {
+          "type": "string",
+          "description": "Short alias for user display"
+        },
+        "defaultReasoningEffort": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "xhigh"],
+          "description": "Role-specific default reasoning effort"
+        },
+        "persona": {
+          "type": "string",
+          "description": "BMAD persona name and role title"
+        },
+        "description": {
+          "type": "string",
+          "description": "Role responsibility description"
+        },
+        "command": {
+          "type": "string",
+          "description": "Deterministic CLI command when engine is 'cli'"
+        }
+      },
+      "required": ["engine"]
+    }
+  }
+}

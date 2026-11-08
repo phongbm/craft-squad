@@ -1,20 +1,34 @@
 {
   "name": "craft-squad",
-  "version": "1.0.0",
-  "description": "CraftSquad: Autonomous multi-agent orchestration system for Antigravity and Codex (Web & Mobile)",
+  "version": "2.2.0",
+    "description": "CraftSquad v2.2: Unified BMAD Agile Multi-Engine Agent Orchestrator for Antigravity, OpenAI Codex, and Claude Code",
   "main": "bin/cli.js",
   "bin": {
     "craft-squad": "./bin/cli.js"
   },
+  "scripts": {
+    "status": "node bin/cli.js status",
+    "init": "node bin/cli.js init",
+    "install:global": "node bin/cli.js install",
+    "config": "node bin/cli.js config",
+    "sync:upstream": "node scripts/sync-upstream.js",
+    "test:dispatcher": "node scripts/test_dispatcher.js",
+    "dispatch": "node bin/cli.js dispatch",
+    "mcp": "node mcp-server/index.js",
+    "mcp:dispatcher": "node mcp-server/index.js --server=dispatcher",
+    "mcp:codex": "node mcp-server/index.js --server=codex",
+    "mcp:claude": "node mcp-server/index.js --server=claude"
+  },
   "keywords": [
     "craft-squad",
+    "bmad-method",
+    "spec-kit",
     "antigravity",
     "codex",
+    "claude-code",
     "multi-agent",
     "orchestrator",
-    "mobile-remote",
-    "web-and-mobile",
-    "ai-agents"
+    "spec-driven-development"
   ],
   "author": "CraftXTech Team",
   "license": "MIT",

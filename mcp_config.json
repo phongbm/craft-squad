@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "craft-squad": {
+      "command": "node",
+      "args": ["mcp-server/index.js"]
+    }
+  }
+}
