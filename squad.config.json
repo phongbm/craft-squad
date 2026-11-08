@@ -6,7 +6,7 @@
   "timeoutSeconds": 360,
   "engineDefaults": {
     "codex": "gpt-6.1-sol",
-    "claude": "claude-3-7-sonnet-latest",
+    "claude": "claude-sonnet-5.5",
     "gemini": "gemini-3.8-flash"
   },
   "roles": {
@@ -23,20 +23,20 @@
       "description": "Triages tasks, plans sprints/tasks, assigns roles, drives the dev-review-test loop, reports with evidence."
     },
     "architect": {
-      "engine": "codex",
-      "model": "gpt-6.1-sol",
+      "engine": "claude",
+      "model": "claude-sonnet-5.5",
       "title": "Architect (System & Technical)",
       "description": "Technical plan, data model, API contracts, architecture rules."
     },
     "ui_designer": {
       "engine": "codex",
-      "model": "gpt-6-astra",
+      "model": "gpt-6.1-sol",
       "title": "UI Designer (UX/UI)",
       "description": "UX flow, design tokens, presentational component skeletons."
     },
     "developer": {
       "engine": "claude",
-      "model": "claude-3-7-sonnet-latest",
+      "model": "claude-sonnet-5.5",
       "title": "Developer (Full-Stack)",
       "description": "Implements tasks to spec and contracts, with tests."
     },
