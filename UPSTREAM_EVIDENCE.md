@@ -1,5 +1,5 @@
 # BẰNG CHỨNG XÁC THỰC NGUỒN GỐC (UPSTREAM PROVENANCE EVIDENCE)
-*Tài liệu tự động tạo bởi: `node scripts/sync-upstream.js` | Cập nhật lúc: 2026-11-08T09:34:41.484Z*
+*Tài liệu tự động tạo bởi: `node scripts/sync-upstream.js` | Cập nhật lúc: 2026-11-09T13:08:38.018Z*
 
 ---
 

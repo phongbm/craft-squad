@@ -20,6 +20,7 @@ const chartersDir = path.join(rootDir, 'charters');
 
 const bmad = (...p) => path.join(bmadSkills, ...p);
 const speckit = (...p) => path.join(speckitTemplates, ...p);
+const craftsquad = (...p) => path.join(rootDir, 'templates', 'craftsquad', ...p);
 
 /**
  * Role -> upstream sources.
@@ -33,6 +34,8 @@ const ROLE_SOURCES = {
     always: [bmad('bmad-agent-po', 'references', 'spec.md')],
     artifacts: {
       spec: [speckit('spec-template.md')],
+      epic: [craftsquad('epic-template.md')],
+      story: [craftsquad('story-template.md')],
       constitution: [speckit('constitution-template.md')],
       checklist: [speckit('checklist-template.md')]
     }
@@ -45,6 +48,8 @@ const ROLE_SOURCES = {
     ],
     artifacts: {
       tasks: [speckit('tasks-template.md')],
+      story: [craftsquad('story-template.md')],
+      epic: [craftsquad('epic-template.md')],
       ticket: [bmad('bmad-agent-po', 'assets', 'ticket-template.md')],
       bug: [bmad('bmad-agent-po', 'assets', 'bug-template.md')],
       spike: [bmad('bmad-agent-po', 'assets', 'spike-template.md')]

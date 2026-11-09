@@ -8,6 +8,9 @@
   },
   "scripts": {
     "status": "node bin/cli.js status",
+    "plugin:install": "node bin/cli.js install",
+    "plugin:upgrade": "node bin/cli.js upgrade",
+    "plugin:uninstall": "node bin/cli.js uninstall",
     "config": "node bin/cli.js config",
     "sync:upstream": "node scripts/sync-upstream.js",
     "test:dispatcher": "node scripts/test_dispatcher.js",

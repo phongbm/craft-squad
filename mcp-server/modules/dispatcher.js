@@ -29,7 +29,11 @@ const rootDir = path.resolve(__dirname, '../..');
 const VALID_EFFORTS = ['low', 'medium', 'high', 'xhigh'];
 
 function normalizeRole(name) {
-  return String(name || '').toLowerCase().replace(/[\s-]/g, '_');
+  let normalized = String(name || '').toLowerCase().replace(/[\s-]/g, '_');
+  if (normalized.startsWith('cs_')) {
+    normalized = normalized.slice(3);
+  }
+  return normalized;
 }
 
 /**
@@ -142,9 +146,17 @@ function runEngineProcess({ bin, args, input, cwd, timeoutSeconds, label, metada
 
     child.on('close', (code) => {
       if (timedOut) {
-        return finish({ success: false, exitCode: code, output: `${label} timed out after ${timeoutSeconds}s.\n${stdout}`.trim() });
+        return finish({
+          success: false,
+          exitCode: code || 124,
+          output: `${label} timed out after ${timeoutSeconds}s (15-minute limit).\n${stdout}`.trim()
+        });
       }
-      finish({ success: code === 0, exitCode: code, output: stdout.trim() || stderr.trim() });
+      let combined = stdout.trim();
+      if (stderr.trim()) {
+        combined = combined ? `${combined}\n${stderr.trim()}` : stderr.trim();
+      }
+      finish({ success: code === 0, exitCode: code, output: combined });
     });
 
     child.stdin.write(input);
@@ -163,13 +175,14 @@ function executeCodex({ prompt, model, effort, cwd, timeoutSeconds }) {
   });
 }
 
-function executeClaude({ prompt, model, cwd, timeoutSeconds }) {
-  logger.info(`[Claude Dispatch] model=${model || '(cli default)'} cwd=${cwd}`);
+function executeClaude({ prompt, model, effort, cwd, timeoutSeconds }) {
+  logger.info(`[Claude Dispatch] model=${model || '(cli default)'} effort=${effort} cwd=${cwd}`);
   const args = ['-p', '--dangerously-skip-permissions'];
   if (model) args.push('--model', model);
+  if (effort) args.push('--effort', effort);
   return runEngineProcess({
     bin: 'claude', args, input: prompt, cwd, timeoutSeconds, label: 'Claude Code CLI',
-    metadata: { engine: 'claude', model, cwd }
+    metadata: { engine: 'claude', model, effort, cwd }
   });
 }
 
@@ -216,7 +229,7 @@ async function dispatchRole(roleName, prompt, options = {}) {
     prompt, options.reasoningEffort, roleConfig,
     config.defaultReasoningEffort, config.geminiDefaultReasoningEffort
   );
-  const timeoutSeconds = options.timeoutSeconds || roleConfig.timeoutSeconds || config.timeoutSeconds || 360;
+  const timeoutSeconds = Number(options.timeoutSeconds || roleConfig.timeoutSeconds || config.timeoutSeconds || 900);
 
   logger.info(`[Dispatch] role=${roleKey} engine=${engine} model=${model || '-'} effort=${effort} dryRun=${!!options.dryRun}`);
 
@@ -248,7 +261,7 @@ async function dispatchRole(roleName, prompt, options = {}) {
       result = await executeCodex({ prompt: compiled.prompt, model, effort, cwd, timeoutSeconds });
       break;
     case 'claude':
-      result = await executeClaude({ prompt: compiled.prompt, model, cwd, timeoutSeconds });
+      result = await executeClaude({ prompt: compiled.prompt, model, effort, cwd, timeoutSeconds });
       break;
     case 'gemini':
     case 'antigravity':
@@ -256,9 +269,12 @@ async function dispatchRole(roleName, prompt, options = {}) {
         success: true,
         exitCode: 0,
         output:
-          `[CraftSquad: execute this role yourself]\n` +
-          `Role: ${base.title} (${roleKey}) | Reasoning effort: ${effort}\n` +
-          `Adopt the role below and complete the task. Do not call squad_dispatch again for this role.\n\n` +
+          `[CraftSquad Subagent Delegation Notice: ${base.title} (${roleKey})]\n` +
+          `Engine: Gemini | Model: ${model || 'gemini-3.8-flash'} | Reasoning effort: ${effort}\n` +
+          `MANDATORY ACTION: The Host Agent MUST NOT execute this role directly in the parent conversation.\n` +
+          `Launch this role as an independent subagent using:\n` +
+          `  invoke_subagent(TypeName="cs-${roleKey.replace(/_/g, '-')}", Role="${base.title}", Prompt=<compiled_prompt_below>)\n\n` +
+          `--- COMPILED ROLE PROMPT ---\n` +
           compiled.prompt,
         metadata: { engine: 'gemini', model, effort, cwd }
       };
@@ -296,7 +312,7 @@ function getDispatcherTools() {
           reasoningEffort: { type: 'string', enum: VALID_EFFORTS, description: 'Optional effort override.' },
           modelOverride: { type: 'string', description: 'Optional one-off model override.' },
           workingDirectory: { type: 'string', description: 'Project root directory.' },
-          timeoutSeconds: { type: 'integer', description: 'Execution timeout (default from config, else 360).' },
+          timeoutSeconds: { type: 'integer', description: 'Execution timeout (default from config, else 600).' },
           dryRun: { type: 'boolean', description: 'Resolve routing and compile the prompt without running any engine.' }
         },
         required: ['role', 'prompt']

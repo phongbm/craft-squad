@@ -3,10 +3,10 @@
   "version": "2.3.0",
   "defaultReasoningEffort": "medium",
   "geminiDefaultReasoningEffort": "high",
-  "timeoutSeconds": 360,
+  "timeoutSeconds": 900,
   "engineDefaults": {
     "codex": "gpt-6.1-sol",
-    "claude": "claude-sonnet-5.5",
+    "claude": "sonnet",
     "gemini": "gemini-3.8-flash"
   },
   "roles": {
@@ -24,7 +24,7 @@
     },
     "architect": {
       "engine": "claude",
-      "model": "claude-sonnet-5.5",
+      "model": "sonnet",
       "title": "Architect (System & Technical)",
       "description": "Technical plan, data model, API contracts, architecture rules."
     },
@@ -36,7 +36,7 @@
     },
     "developer": {
       "engine": "claude",
-      "model": "claude-sonnet-5.5",
+      "model": "sonnet",
       "title": "Developer (Full-Stack)",
       "description": "Implements tasks to spec and contracts, with tests."
     },

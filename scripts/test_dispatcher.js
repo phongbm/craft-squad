@@ -28,20 +28,31 @@ const test = async (name, fn) => {
     Object.values(config.roles).forEach((r) => assert(['gemini', 'codex', 'claude', 'cli'].includes(r.engine)));
   });
 
-  await test('skills/rules contain no model names or hardcoded engine ids', () => {
+  await test('agents/rules contain no model names or hardcoded engine ids', () => {
     const banned = /gpt-\d|sonnet|gemini-\d|astra|claude-\d|opus|haiku/i;
     const files = [path.join(root, 'rules', 'AGENTS.md')];
-    for (const d of fs.readdirSync(path.join(root, 'skills'))) files.push(path.join(root, 'skills', d, 'SKILL.md'));
+    if (fs.existsSync(path.join(root, 'agents'))) {
+      for (const f of fs.readdirSync(path.join(root, 'agents'))) files.push(path.join(root, 'agents', f));
+    }
     for (const f of fs.readdirSync(path.join(root, 'charters'))) files.push(path.join(root, 'charters', f));
     files.forEach((f) => assert(!banned.test(fs.readFileSync(f, 'utf8')), `model name found in ${path.relative(root, f)}`));
   });
 
-  await test('every role has a charter and a cs-* skill; no bmad-* skills remain', () => {
-    const skills = fs.readdirSync(path.join(root, 'skills'));
-    assert(!skills.some((s) => s.startsWith('bmad-')), 'bmad-* skill still present');
+  await test('every role has a charter and a native subagent; no skills remain', () => {
+    assert(!fs.existsSync(path.join(root, 'skills')), 'skills/ directory still exists, should be fully replaced by agents/');
     roleIds.forEach((r) => assert(fs.existsSync(path.join(root, 'charters', `${r}.md`)), `charter missing: ${r}`));
-    ['cs-spec-owner', 'cs-scrum-master', 'cs-architect', 'cs-ui-designer', 'cs-developer', 'cs-code-reviewer', 'cs-tester', 'cs-qa-gatekeeper', 'cs-rescue', 'craft-squad']
-      .forEach((s) => assert(skills.includes(s), `skill missing: ${s}`));
+    const agents = fs.readdirSync(path.join(root, 'agents'));
+    const expectedAgents = [
+      'cs-spec-owner.md',
+      'cs-scrum-master.md',
+      'cs-architect.md',
+      'cs-ui-designer.md',
+      'cs-developer.md',
+      'cs-code-reviewer.md',
+      'cs-tester.md',
+      'cs-rescue.md'
+    ];
+    expectedAgents.forEach((a) => assert(agents.includes(a), `native subagent manifest missing: ${a}`));
   });
 
   await test('reasoning effort rules', () => {
@@ -85,6 +96,20 @@ const test = async (name, fn) => {
     assert(/Edge Case Hunter/.test(rev.prompt) && /Verification Gap/.test(rev.prompt));
     const tasks = compileRolePrompt('scrum_master', 'T');
     assert(/Tasks:/.test(tasks.prompt));
+    const epic = compileRolePrompt('spec_owner', 'T', { artifactType: 'epic' });
+    assert(/Scope Boundaries/.test(epic.prompt));
+    const story = compileRolePrompt('scrum_master', 'T', { artifactType: 'story' });
+    assert(/ACCEPTANCE CRITERIA/.test(story.prompt));
+  });
+
+  await test('every role has a native subagent definition in agents/', () => {
+    const subagents = ['cs-spec-owner', 'cs-scrum-master', 'cs-architect', 'cs-ui-designer', 'cs-developer', 'cs-code-reviewer', 'cs-tester', 'cs-rescue'];
+    subagents.forEach((s) => {
+      const p = path.join(root, 'agents', `${s}.md`);
+      assert(fs.existsSync(p), `subagent missing: ${s}`);
+      const content = fs.readFileSync(p, 'utf8');
+      assert(/subagent:\s*true/i.test(content), `subagent flag missing in ${s}`);
+    });
   });
 
   await test('unknown artifactType is rejected', () => {
@@ -100,7 +125,7 @@ const test = async (name, fn) => {
     }
   });
 
-  await test('changing config changes routing without touching skills', async () => {
+  await test('changing config changes routing without touching subagents or rules', async () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-'));
     fs.writeFileSync(path.join(tmp, 'squad.config.json'), JSON.stringify(config));
     setRole({ role: 'developer', engine: 'codex', model: 'custom-model-x', reasoningEffort: 'high', workingDirectory: tmp });
@@ -116,6 +141,13 @@ const test = async (name, fn) => {
 
   await test('unknown role is rejected with available roles', async () => {
     await assert.rejects(() => dispatchRole('nobody', 'x', { dryRun: true, workingDirectory: root }), /not defined/);
+  });
+
+  await test('normalizeRole accepts cs-prefixed and kebab-case role names', async () => {
+    const dev = await dispatchRole('cs-developer', 'check', { dryRun: true, workingDirectory: root });
+    assert.strictEqual(dev.role, 'developer');
+    const rev = await dispatchRole('cs_code_reviewer', 'check', { dryRun: true, workingDirectory: root });
+    assert.strictEqual(rev.role, 'code_reviewer');
   });
 
   await test('qa_gatekeeper reports real exit codes', async () => {

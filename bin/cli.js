@@ -42,36 +42,112 @@ function copyRecursive(src, dest) {
   }
 }
 
+function copyCleanPlugin(src, dest) {
+  const allowedDirs = ['agents', 'charters', 'mcp-server', 'rules', 'templates', 'bin'];
+  const allowedFiles = ['plugin.json', 'package.json', 'squad.config.json', 'squad.schema.json', 'mcp_config.json', 'README.md', 'UPSTREAM_EVIDENCE.md'];
+
+  fs.mkdirSync(dest, { recursive: true });
+  for (const f of allowedFiles) {
+    const srcFile = path.join(src, f);
+    if (fs.existsSync(srcFile)) {
+      fs.copyFileSync(srcFile, path.join(dest, f));
+    }
+  }
+  for (const d of allowedDirs) {
+    const srcDir = path.join(src, d);
+    if (fs.existsSync(srcDir)) {
+      copyRecursive(srcDir, path.join(dest, d));
+    }
+  }
+}
+
+function enableInConfigJson() {
+  try {
+    const configPath = path.join(userHome, '.gemini', 'config', 'config.json');
+    if (fs.existsSync(configPath)) {
+      const cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      if (!cfg.plugins) cfg.plugins = {};
+      if (!cfg.plugins['craft-squad']) cfg.plugins['craft-squad'] = {};
+      cfg.plugins['craft-squad'].enabled = true;
+      fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2), 'utf8');
+      console.log('✅ Enabled craft-squad in Antigravity configuration.');
+    }
+  } catch (e) {
+    // Ignore error
+  }
+}
+
 function installGlobalPlugin() {
   const targetDir = path.join(userHome, '.gemini', 'config', 'plugins', 'craft-squad');
   console.log(`\n📦 Installing CraftSquad as Antigravity Global Plugin...`);
   console.log(`   Source: ${packageRootDir}`);
   console.log(`   Target: ${targetDir}\n`);
 
-  fs.mkdirSync(path.dirname(targetDir), { recursive: true });
+  fs.mkdirSync(targetDir, { recursive: true });
+  copyCleanPlugin(packageRootDir, targetDir);
+  enableInConfigJson();
+
+  console.log(`✅ Clean plugin files deployed to: ${targetDir}`);
+  console.log(`\n🎉 CraftSquad Global Plugin ready! Check Plugins in Antigravity.\n`);
+}
+
+function killRunningMcpServer() {
+  try {
+    if (process.platform === 'win32') {
+      execSync('powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like \'*mcp-server/index.js*\' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }"', { stdio: 'ignore' });
+    } else {
+      execSync('pkill -f "mcp-server/index.js"', { stdio: 'ignore' });
+    }
+  } catch (_) {
+    // Ignore when no running server process exists
+  }
+}
+
+function uninstallGlobalPlugin() {
+  const targetDir = path.join(userHome, '.gemini', 'config', 'plugins', 'craft-squad');
+  console.log(`\n🗑️ Uninstalling CraftSquad Global Plugin...`);
+  console.log(`   Target: ${targetDir}\n`);
+
+  if (!fs.existsSync(targetDir)) {
+    console.log(`ℹ️ CraftSquad is not installed at ${targetDir}`);
+    return;
+  }
+
+  killRunningMcpServer();
 
   try {
-    if (fs.existsSync(targetDir)) {
-      const items = fs.readdirSync(targetDir);
-      if (items.length === 0) {
-        fs.rmdirSync(targetDir);
+    if (process.platform === 'win32') {
+      try {
+        execSync(`cmd /c rmdir "${targetDir}"`, { stdio: 'pipe' });
+        console.log(`✅ Successfully removed plugin link/junction: ${targetDir}`);
+        console.log(`\n🎉 CraftSquad Global Plugin uninstalled! Restart Antigravity to apply.\n`);
+        return;
+      } catch (_) {
+        // Fallback if targetDir was a non-empty directory rather than a junction
       }
     }
 
-    if (!fs.existsSync(targetDir)) {
-      execSync(`cmd /c mklink /J "${targetDir}" "${packageRootDir}"`, { stdio: 'inherit' });
-      console.log(`\n✅ Linked via Directory Junction: ${targetDir} -> ${packageRootDir}`);
-      console.log(`   Any updates in this repository are immediately live in Antigravity!`);
-    } else {
-      console.log(`ℹ️ Plugin directory already exists at ${targetDir}`);
-    }
-  } catch (e) {
-    console.log(`⚠️ Junction link failed (${e.message}), copying files recursively...`);
-    copyRecursive(packageRootDir, targetDir);
-    console.log(`✅ Global Plugin files copied to: ${targetDir}`);
+    fs.rmSync(targetDir, { recursive: true, force: true });
+    console.log(`✅ Successfully removed plugin directory: ${targetDir}`);
+  } catch (err) {
+    console.error(`❌ Failed to remove ${targetDir}: ${err.message}`);
+    process.exit(1);
   }
 
-  console.log(`\n🎉 CraftSquad Global Plugin ready! Restart Antigravity or check Customizations to use.\n`);
+  console.log(`\n🎉 CraftSquad Global Plugin uninstalled! Restart Antigravity to apply.\n`);
+}
+
+function upgradePlugin() {
+  console.log(`\n🔄 Upgrading CraftSquad Plugin...`);
+  try {
+    console.log('1. Refreshing upstream BMAD and Spec-Kit templates...');
+    require('../scripts/sync-upstream.js');
+  } catch (e) {
+    console.log(`ℹ️ Upstream sync note: ${e.message}`);
+  }
+  uninstallGlobalPlugin();
+  installGlobalPlugin();
+  console.log(`\n🎉 Upgrade complete! All templates, subagents, and configurations are up to date.\n`);
 }
 
 function printConfig() {
@@ -145,6 +221,19 @@ switch (command) {
   case 'install':
   case 'install:global': {
     installGlobalPlugin();
+    break;
+  }
+
+  case 'uninstall':
+  case 'uninstall:global':
+  case 'remove': {
+    uninstallGlobalPlugin();
+    break;
+  }
+
+  case 'upgrade':
+  case 'update': {
+    upgradePlugin();
     break;
   }
 

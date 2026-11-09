@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "CraftSquad Configuration",
-  "description": "Role-to-engine/model/effort bindings for a CraftSquad agent team. Skills never reference models; they are resolved from this file on every dispatch.",
+  "description": "Role-to-engine/model/effort bindings for a CraftSquad agent team. Subagents and rules never reference models; they are resolved from this file on every dispatch.",
   "type": "object",
   "required": ["roles"],
   "properties": {
@@ -22,8 +22,8 @@
     "timeoutSeconds": {
       "type": "integer",
       "minimum": 1,
-      "default": 360,
-      "description": "Default per-dispatch timeout."
+      "default": 900,
+      "description": "Default per-dispatch timeout (in seconds, default: 900 for 15 minutes)."
     },
     "engineDefaults": {
       "type": "object",
