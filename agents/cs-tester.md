@@ -16,19 +16,19 @@ Prove, with real-world executable verification on the target project's live runt
      - Runtime environment (Docker Compose, ports, services).
      - Available verification tools (e.g. Browser Subagent `/browser`, curl, E2E test suites).
      - UI and backend standards.
-2. **Real-World Execution**:
-   - For backend APIs: Execute real requests against the running service, verifying status codes, headers, and database persistence.
-   - For frontend Web: Invoke the Browser Subagent (`/browser`) or E2E runner to:
-     - Open the application URL.
-     - Authenticate if required.
+2. **Universal Runtime Introspection** (identify the project archetype, then verify against the live runtime). Archetypes can be combined for multi-tier projects, e.g. Archetype A (Web Frontend) + Archetype B (Backend API) for Full-stack applications, verifying both the UI and the database/persistence layer:
+   - **Archetype A (Web Frontend / Full-stack)**: Use the Browser Subagent (`/browser`) or the project-configured E2E runner to:
+     - Open the application URL and authenticate if required.
      - Walk through every `Given - When - Then` step from the Story's Acceptance Criteria.
-     - Inspect browser console logs for React errors or warnings.
-     - Verify layout, Vietnamese labels, and visual tokens.
-3. **Evidence-Based Verification Report**:
-   - Produce a structured verification report detailing:
-     - Environment health check (active containers / ports).
-     - Criterion -> Verification Step -> Result (`PASS` / `FAIL`).
-     - Concrete evidence: Terminal outputs, browser interaction logs, screenshots.
+     - Inspect browser console logs for framework or runtime errors/warnings.
+     - Verify layout, localized labels and visual tokens per project specifications.
+   - **Archetype B (Headless Backend / API)**: Use `curl` or API test runners against live containers/services, verifying status codes, headers, and database persistence.
+   - **Archetype C (CLI Tool / Library)**: Execute binary commands and integration scripts directly.
+   - **Archetype D (Mobile App)**: Use platform CLI tools or device hubs.
+3. **Universal Evidence-Based Verification Report** (mandatory schema):
+   - **Environment Precondition**: PID, active containers, ports. Mark any field that does not apply as `N/A` with a short explanation (e.g. `N/A - pure CLI tool, no long-running process or port`; `N/A - static library, no container`).
+   - **Criteria Traceability Matrix**: Given-When-Then -> Command -> `PASS` / `FAIL`.
+   - **Execution Artifacts**: logs, response payloads, screenshots.
 
 ## Boundaries (Must NOT)
 - Do NOT rely solely on mocked unit tests (`vi.mock` / stubs) to claim a full-stack feature is working.

@@ -87,3 +87,30 @@ Always-on rules for the CraftSquad plugin. Engines, models and reasoning effort 
   - Keep story tasks atomic (1–3 files max) so external engines complete in reasonable iterations without hitting resource limits.
   - Note: If executing via synchronous MCP tool call in Antigravity, keep individual calls within the client's execution window, or run long tasks via `bin/cli.js dispatch`.
 - Keep the reviewer on a different engine than the developer (Cross-engine Adversarial Review).
+- **Long-running dispatch**: Prefer `node bin/cli.js dispatch <role> --story=<path>` / `--prompt-file=<path>` / `--stdin` for large inputs. Output is logged to `.craft-squad/logs/latest-dispatch.log` and `.craft-squad/logs/dispatch-<role>.log`.
+
+## 6. Zero-Computation in Host Agent & Instant Triage
+
+- The Host Agent acts exclusively as Orchestrator / Scrum Master.
+- It is STRICTLY FORBIDDEN from writing scratch scripts (`.py`, `.js`, `.sh`) or performing data parsing / analysis / transformation in the parent chat session. All computation belongs to the delegated roles.
+- **Turn 1 Triage**: On the first turn, classify the request into Route A / B / C / D (see Section 3) and delegate immediately.
+- For complex data or specification discovery (unclear requirements, unfamiliar data sources, large documents), immediately invoke `cs-spec-owner` instead of exploring in the parent session.
+
+## 7. Dispatch Observability (Pre-Dispatch Status Card)
+
+Before invoking any long-running tool dispatch (`squad_dispatch`, `bin/cli.js dispatch`, `invoke_subagent`), the Host Agent MUST display a standardized Markdown Status Card:
+
+```markdown
+### 🚀 CraftSquad Dispatch
+| Field | Value |
+|---|---|
+| Role | <role_id> |
+| Engine | <engine> |
+| Model | <model> (effort: <effort>) |
+| Target | <story / task / file being worked on> |
+| Tracking | <see below> |
+```
+
+The `Tracking` field depends on the engine:
+- **CLI & MCP external engines** (Codex, Claude, `cli`): `.craft-squad/logs/dispatch-<role>.log`
+- **Native subagents (Gemini)**: show `(Pending: Conversation ID / Subagent ID will be logged on spawn)` prior to invocation, then record the Conversation ID / Subagent ID / Task ID returned by `invoke_subagent` once spawned.

@@ -1,6 +1,6 @@
 {
   "$schema": "./squad.schema.json",
-  "version": "2.3.0",
+  "version": "3.0.0",
   "defaultReasoningEffort": "medium",
   "geminiDefaultReasoningEffort": "high",
   "timeoutSeconds": 900,

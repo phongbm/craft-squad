@@ -1,6 +1,6 @@
 {
   "name": "craft-squad",
-  "version": "2.3.0",
+  "version": "3.0.0",
   "displayName": "CraftSquad",
   "description": "Role-based agent team: Spec Owner, Scrum Master, Architect, UI Designer, Developer, Code Reviewer, Tester, QA Gatekeeper and Rescue. Engines, models and effort per role are configurable; standards come from BMAD-METHOD and GitHub Spec-Kit.",
   "suggestedPrompts": [

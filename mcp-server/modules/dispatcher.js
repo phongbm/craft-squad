@@ -103,53 +103,85 @@ function killProcessTree(child) {
     if (process.platform === 'win32') {
       execSync(`taskkill /pid ${child.pid} /T /F`, { stdio: 'ignore' });
     } else {
-      child.kill('SIGKILL');
+        try {
+          process.kill(-child.pid, 'SIGKILL');
+        } catch (_) {
+          child.kill('SIGKILL');
+        }
     }
   } catch (e) {
     // already gone
   }
 }
 
+/** Appends text to .craft-squad/logs/<fileName> under cwd. Never throws. */
+function appendDispatchLog(cwd, fileNames, text) {
+  try {
+    const logDir = path.join(cwd, '.craft-squad', 'logs');
+    fs.mkdirSync(logDir, { recursive: true });
+    for (const name of [].concat(fileNames)) {
+      fs.appendFileSync(path.join(logDir, name), text, 'utf8');
+    }
+  } catch (e) {
+    logger.warn(`Failed to write dispatch log: ${e.message}`);
+  }
+}
+
 /** Runs a CLI engine, feeding the prompt through stdin (no argv length / quoting limits). */
 function runEngineProcess({ bin, args, input, cwd, timeoutSeconds, label, metadata }) {
-  return new Promise((resolve) => {
-    let child;
-    try {
-      child = spawnCli(bin, args, { cwd, stdio: ['pipe', 'pipe', 'pipe'] });
-    } catch (e) {
-      return resolve({ success: false, exitCode: null, output: `Failed to start ${label}: ${e.message}`, metadata });
-    }
+  const logFiles = ['latest-dispatch.log', `dispatch-${(metadata && (metadata.role || metadata.engine)) || 'engine'}.log`];
+  const logLine = (text) => appendDispatchLog(cwd, logFiles, text);
+  logLine(`\n===== [${new Date().toISOString()}] ${label} dispatch start (model=${(metadata && metadata.model) || '-'}, effort=${(metadata && metadata.effort) || '-'}) =====\n`);
 
-    let stdout = '';
-    let stderr = '';
-    let timedOut = false;
+  return new Promise((resolve) => {
+    let timer;
     let settled = false;
     const finish = (result) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      logLine(`\n===== [${new Date().toISOString()}] ${label} dispatch end (success=${result.success}, exitCode=${result.exitCode}) =====\n`);
       resolve({ ...result, metadata });
     };
 
-    const timer = setTimeout(() => {
+    let child;
+    try {
+      child = spawnCli(bin, args, { cwd, stdio: ['pipe', 'pipe', 'pipe'], detached: process.platform !== 'win32' });
+    } catch (e) {
+      const msg = `Failed to start ${label}: ${e.message}`;
+      logLine(`${msg}\n`);
+      return finish({ success: false, exitCode: null, output: msg });
+    }
+
+    let stdout = '';
+    let stderr = '';
+    let timedOut = false;
+
+    timer = setTimeout(() => {
       timedOut = true;
       killProcessTree(child);
     }, timeoutSeconds * 1000);
 
-    child.stdout.on('data', (d) => { stdout += d.toString(); });
-    child.stderr.on('data', (d) => { stderr += d.toString(); });
+    if (child.stdout) child.stdout.setEncoding('utf8');
+    if (child.stderr) child.stderr.setEncoding('utf8');
+    child.stdout.on('data', (s) => { stdout += s; logLine(s); });
+    child.stderr.on('data', (s) => { stderr += s; logLine(s); });
     child.stdin.on('error', () => { /* process may exit before reading stdin */ });
 
     child.on('error', (err) => {
-      finish({ success: false, exitCode: null, output: `Failed to run ${label}: ${err.message}` });
+      const msg = `Failed to run ${label}: ${err.message}`;
+      logLine(`${msg}\n`);
+      finish({ success: false, exitCode: null, output: msg });
     });
 
     child.on('close', (code) => {
       if (timedOut) {
+        const msg = `${label} timed out after ${timeoutSeconds}s (15-minute limit).`;
+        logLine(`\n${msg}\n`);
         return finish({
           success: false,
           exitCode: code || 124,
-          output: `${label} timed out after ${timeoutSeconds}s (15-minute limit).\n${stdout}`.trim()
+          output: `${msg}\n${stdout}`.trim()
         });
       }
       let combined = stdout.trim();
@@ -164,44 +196,95 @@ function runEngineProcess({ bin, args, input, cwd, timeoutSeconds, label, metada
   });
 }
 
-function executeCodex({ prompt, model, effort, cwd, timeoutSeconds }) {
+function executeCodex({ prompt, role, model, effort, cwd, timeoutSeconds }) {
   logger.info(`[Codex Dispatch] model=${model || '(cli default)'} effort=${effort} cwd=${cwd}`);
   const args = ['exec'];
   if (model) args.push('-m', model);
   args.push('-c', `model_reasoning_effort="${effort}"`, '-s', 'workspace-write', '--dangerously-bypass-approvals-and-sandbox', '-C', cwd);
   return runEngineProcess({
     bin: 'codex', args, input: prompt, cwd, timeoutSeconds, label: 'Codex CLI',
-    metadata: { engine: 'codex', model, effort, cwd }
+    metadata: { engine: 'codex', role, model, effort, cwd }
   });
 }
 
-function executeClaude({ prompt, model, effort, cwd, timeoutSeconds }) {
+function executeClaude({ prompt, role, model, effort, cwd, timeoutSeconds }) {
   logger.info(`[Claude Dispatch] model=${model || '(cli default)'} effort=${effort} cwd=${cwd}`);
   const args = ['-p', '--dangerously-skip-permissions'];
   if (model) args.push('--model', model);
   if (effort) args.push('--effort', effort);
   return runEngineProcess({
     bin: 'claude', args, input: prompt, cwd, timeoutSeconds, label: 'Claude Code CLI',
-    metadata: { engine: 'claude', model, effort, cwd }
+    metadata: { engine: 'claude', role, model, effort, cwd }
   });
 }
 
-function executeCliCommand({ command, cwd, timeoutSeconds }) {
+function executeCliCommand({ command, cwd, timeoutSeconds, role }) {
   logger.info(`[CLI Dispatch] command=${command} cwd=${cwd}`);
-  if (!command) {
-    return { success: false, exitCode: null, output: 'No command configured for this role in squad.config.json.', metadata: { engine: 'cli', cwd } };
-  }
-  try {
-    const output = execSync(command, { cwd, encoding: 'utf8', timeout: timeoutSeconds * 1000, stdio: ['ignore', 'pipe', 'pipe'] });
-    return { success: true, exitCode: 0, output: output.trim(), metadata: { engine: 'cli', command, cwd } };
-  } catch (err) {
-    return {
-      success: false,
-      exitCode: typeof err.status === 'number' ? err.status : 1,
-      output: `${err.stdout || ''}\n${err.stderr || err.message}`.trim(),
-      metadata: { engine: 'cli', command, cwd }
+  const roleKey = role || 'cli';
+  const logFiles = ['latest-dispatch.log', 'dispatch-' + roleKey + '.log'];
+  const logLine = (text) => appendDispatchLog(cwd, logFiles, text);
+  logLine(`
+===== [${new Date().toISOString()}] CLI command dispatch start (role=${roleKey}, command=${command || '-'}) =====
+`);
+  const metadata = { engine: 'cli', command, cwd };
+
+  return new Promise((resolve) => {
+    let timer;
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      logLine(`
+===== [${new Date().toISOString()}] CLI command dispatch end (success=${result.success}, exitCode=${result.exitCode}) =====
+`);
+      resolve({ ...result, metadata });
     };
-  }
+
+    if (!command) {
+      const msg = 'No command configured for this role in squad.config.json.';
+      logLine(`${msg}
+`);
+      return finish({ success: false, exitCode: null, output: msg });
+    }
+
+    let child;
+    try {
+      child = spawn(command, { cwd, shell: true, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, detached: process.platform !== 'win32' });
+    } catch (err) {
+      logLine(`${err.message}
+`);
+      return finish({ success: false, exitCode: 1, output: err.message });
+    }
+
+    let stdout = '';
+    let stderr = '';
+    let timedOut = false;
+    timer = setTimeout(() => { timedOut = true; killProcessTree(child); }, timeoutSeconds * 1000);
+
+    if (child.stdout) child.stdout.setEncoding('utf8');
+    if (child.stderr) child.stderr.setEncoding('utf8');
+    child.stdout.on('data', (s) => { stdout += s; logLine(s); });
+    child.stderr.on('data', (s) => { stderr += s; logLine(s); });
+
+    child.on('error', (err) => {
+      logLine(`${err.message}
+`);
+      finish({ success: false, exitCode: 1, output: [stdout.trim(), err.message].filter(Boolean).join('\n') });
+    });
+
+    child.on('close', (code) => {
+      const out = [stdout, stderr].map((x) => x.trim()).filter(Boolean).join('\n');
+      if (timedOut) {
+        const msg = `CLI command timed out after ${timeoutSeconds}s.`;
+        logLine(`
+${msg}
+`);
+        return finish({ success: false, exitCode: code || 124, output: [out, msg].filter(Boolean).join('\n') });
+      }
+      finish({ success: code === 0, exitCode: typeof code === 'number' ? code : 1, output: out });
+    });
+  });
 }
 
 /* --------------------------------- dispatch --------------------------------- */
@@ -209,10 +292,29 @@ function executeCliCommand({ command, cwd, timeoutSeconds }) {
 /**
  * @param {string} roleName
  * @param {string} prompt          the task for the role
- * @param {object} options         { workingDirectory, reasoningEffort, modelOverride, timeoutSeconds, artifactType, dryRun }
+ * @param {object} options         { workingDirectory, reasoningEffort, modelOverride, timeoutSeconds, artifactType, dryRun, promptFile, storyPath }
+ *                                 promptFile: read the task prompt from this file; storyPath: read a Story markdown and wrap it as the task.
  */
 async function dispatchRole(roleName, prompt, options = {}) {
   const cwd = options.workingDirectory || process.cwd();
+  const resolveFrom = (p) => (path.isAbsolute(p) ? p : path.resolve(cwd, p));
+  if (options.promptFile !== undefined && options.storyPath !== undefined) {
+    throw new Error('Cannot specify both promptFile and storyPath.');
+  }
+  if (options.promptFile !== undefined && !String(options.promptFile).trim()) {
+    throw new Error('Invalid empty promptFile provided.');
+  }
+  if (options.storyPath !== undefined && !String(options.storyPath).trim()) {
+    throw new Error('Invalid empty storyPath provided.');
+  }
+  if (options.promptFile) {
+    prompt = fs.readFileSync(resolveFrom(options.promptFile), 'utf8');
+  } else if (options.storyPath) {
+    const rawStory = fs.readFileSync(resolveFrom(options.storyPath), 'utf8');
+    if (!rawStory.trim()) throw new Error('Story file is empty or contains only whitespace.');
+    prompt = 'Implement/Execute the following Story according to role charter:\n\n' + rawStory;
+  }
+  prompt = String(prompt || '');
   const { config, filePath } = resolveConfig(cwd);
 
   const roleKey = normalizeRole(roleName);
@@ -223,6 +325,11 @@ async function dispatchRole(roleName, prompt, options = {}) {
 
   const engine = (roleConfig.engine || '').toLowerCase();
   if (!engine) throw new Error(`Role "${roleKey}" has no engine in ${filePath}`);
+
+  // The cli engine runs a configured command and never consumes a prompt.
+  if (engine !== 'cli' && !prompt.trim()) {
+    throw new Error(`A non-empty prompt, promptFile, or storyPath is required to dispatch role "${roleName}".`);
+  }
 
   const model = options.modelOverride || roleConfig.model;
   const effort = detectReasoningEffort(
@@ -245,7 +352,7 @@ async function dispatchRole(roleName, prompt, options = {}) {
   // Deterministic gate: no prompt compilation.
   if (engine === 'cli') {
     if (options.dryRun) return { ...base, success: true, dryRun: true, command: roleConfig.command, output: '' };
-    return { ...base, ...executeCliCommand({ command: roleConfig.command, cwd, timeoutSeconds }) };
+    return { ...base, ...(await executeCliCommand({ command: roleConfig.command, cwd, timeoutSeconds, role: roleKey })) };
   }
 
   const compiled = compileRolePrompt(roleKey, stripEffortTags(prompt), { artifactType: options.artifactType });
@@ -258,10 +365,10 @@ async function dispatchRole(roleName, prompt, options = {}) {
   let result;
   switch (engine) {
     case 'codex':
-      result = await executeCodex({ prompt: compiled.prompt, model, effort, cwd, timeoutSeconds });
+      result = await executeCodex({ prompt: compiled.prompt, role: roleKey, model, effort, cwd, timeoutSeconds });
       break;
     case 'claude':
-      result = await executeClaude({ prompt: compiled.prompt, model, effort, cwd, timeoutSeconds });
+      result = await executeClaude({ prompt: compiled.prompt, role: roleKey, model, effort, cwd, timeoutSeconds });
       break;
     case 'gemini':
     case 'antigravity':
@@ -307,7 +414,9 @@ function getDispatcherTools() {
         type: 'object',
         properties: {
           role: { type: 'string', description: `Squad role id. One of: ${roles.join(', ')}.` },
-          prompt: { type: 'string', description: 'The task, with the context the role needs. Optional tag [effort: low|medium|high|xhigh] overrides reasoning effort.' },
+          prompt: { type: 'string', description: 'The task, with the context the role needs. Optional tag [effort: low|medium|high|xhigh] overrides reasoning effort. Ignored when promptFile or storyPath is given.' },
+          promptFile: { type: 'string', description: 'Optional path to a file containing the task prompt.' },
+          storyPath: { type: 'string', description: 'Optional path to a Story markdown file to execute.' },
           artifactType: { type: 'string', description: `Optional upstream template to apply. ${artifacts}` },
           reasoningEffort: { type: 'string', enum: VALID_EFFORTS, description: 'Optional effort override.' },
           modelOverride: { type: 'string', description: 'Optional one-off model override.' },
@@ -315,7 +424,7 @@ function getDispatcherTools() {
           timeoutSeconds: { type: 'integer', description: 'Execution timeout (default from config, else 600).' },
           dryRun: { type: 'boolean', description: 'Resolve routing and compile the prompt without running any engine.' }
         },
-        required: ['role', 'prompt']
+        required: ['role']
       }
     },
     {
@@ -385,6 +494,8 @@ async function handleDispatcherToolCall(name, args = {}) {
 
 module.exports = {
   dispatchRole,
+  appendDispatchLog,
+  executeCliCommand,
   resolveConfig,
   detectReasoningEffort,
   setRole,
