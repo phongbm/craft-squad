@@ -1,8 +1,15 @@
 {
   "name": "craft-squad",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "displayName": "CraftSquad",
-  "description": "Role-based agent team: Spec Owner, Scrum Master, Architect, UI Designer, Developer, Code Reviewer, Tester, QA Gatekeeper and Rescue. Engines, models and effort per role are configurable; standards come from BMAD-METHOD and GitHub Spec-Kit.",
+  "description": "Role-based autonomous agent team with multi-engine routing (Claude, Codex, Gemini), dual-track delivery, and adversarial quality gates.",
+  "author": {
+    "name": "CraftXTech Team"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/craftxtech/craft-squad"
+  },
   "suggestedPrompts": [
     "Write the spec for this feature with the Spec Owner, then hand it to the Scrum Master",
     "Scrum Master: take this task, triage it, and drive it through review, test and the gate",

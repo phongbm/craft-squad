@@ -1,0 +1,18 @@
+{
+  "name": "craft-squad-tool",
+  "version": "1.0.0",
+  "description": "CraftSquad Local Web Tool: Role Model Switcher, Codex Profile Rotator, and AI Quota Monitor",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "craft-squad",
+    "codex-switcher",
+    "quota-monitor",
+    "model-switcher"
+  ],
+  "author": "CraftXTech Team",
+  "license": "MIT"
+}

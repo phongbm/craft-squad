@@ -1,0 +1,35 @@
+{
+  "name": "craft-squad",
+  "version": "3.1.0",
+  "description": "CraftSquad: a role-based agent team (spec owner, scrum master, architect, UI designer, developer, reviewer, tester, gatekeeper) with config-driven engines, built on upstream BMAD-METHOD and GitHub Spec-Kit.",
+  "main": "bin/cli.js",
+  "bin": {
+    "craft-squad": "./bin/cli.js"
+  },
+  "scripts": {
+    "status": "node bin/cli.js status",
+    "plugin:install": "node bin/cli.js install",
+    "plugin:upgrade": "node bin/cli.js upgrade",
+    "plugin:uninstall": "node bin/cli.js uninstall",
+    "config": "node bin/cli.js config",
+    "sync:upstream": "node scripts/sync-upstream.js",
+    "test:dispatcher": "node scripts/test_dispatcher.js",
+    "dispatch": "node bin/cli.js dispatch",
+    "mcp": "node mcp-server/index.js"
+  },
+  "keywords": [
+    "craft-squad",
+    "bmad-method",
+    "spec-kit",
+    "antigravity",
+    "codex",
+    "claude-code",
+    "multi-agent",
+    "spec-driven-development"
+  ],
+  "author": "CraftXTech Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

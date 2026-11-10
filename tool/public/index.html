@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CraftSquad Studio - Agent Team & Quota Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Navbar -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo-icon">🚀</div>
+        <div>
+          <h1>CraftSquad Studio</h1>
+          <p class="subtitle">Agent Team Model Switcher & Quota Monitor</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <span class="status-badge live" id="live-indicator">
+          <span class="dot"></span> Online
+        </span>
+        <button class="btn btn-secondary" id="btn-refresh" title="Refresh Dashboard">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          Refresh
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Section 1: Quota & Auth Overview -->
+      <section class="dashboard-section">
+        <div class="section-header">
+          <h2>⚡ Multi-Engine Quota & Auth Monitor</h2>
+          <span class="section-tag">Real-time Account State</span>
+        </div>
+        <div class="cards-grid" id="quota-cards">
+          <!-- Injected by JS -->
+          <div class="card loading-card">Loading AI Engine quotas...</div>
+        </div>
+      </section>
+
+      <!-- Section 2: ChatGPT Codex Account Rotator -->
+      <section class="dashboard-section">
+        <div class="section-header">
+          <div>
+            <h2>🔄 ChatGPT Codex Multi-Account Switcher</h2>
+            <p class="section-desc">Powered by <code>chatgpt-codex-switcher</code>. Rotate accounts instantly when hitting 5-hour rolling limits.</p>
+          </div>
+          <button class="btn btn-primary" id="btn-rotate-next">
+            ⚡ Rotate to Next Valid Account
+          </button>
+        </div>
+
+        <div class="card accounts-card">
+          <div class="table-responsive">
+            <table class="data-table" id="profiles-table">
+              <thead>
+                <tr>
+                  <th>Profile</th>
+                  <th>Email</th>
+                  <th>Auth Mode</th>
+                  <th>Token Expiry</th>
+                  <th>Status</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="profiles-tbody">
+                <tr><td colspan="6" class="text-center">Loading Codex profiles...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3: Role & Model Switcher -->
+      <section class="dashboard-section">
+        <div class="section-header">
+          <div>
+            <h2>⚙️ Role & Model Matrix</h2>
+            <p class="section-desc">Configure engines, models, and reasoning effort per role in <code>squad.config.json</code>.</p>
+          </div>
+          <span class="badge badge-info" id="config-path-badge">squad.config.json</span>
+        </div>
+
+        <div class="roles-grid" id="roles-grid">
+          <!-- Injected by JS -->
+          <div class="card loading-card">Loading roles configuration...</div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>CraftSquad Framework v3.1.0 • Antigravity Plugin & Local Tool</p>
+    </footer>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
