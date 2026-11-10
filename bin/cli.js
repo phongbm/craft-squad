@@ -278,6 +278,7 @@ switch (command) {
     const artifactType = flagValue('artifact');
     const promptFile = flagValue('prompt-file');
     const storyPath = flagValue('story');
+    const epicPath = flagValue('epic');
     const useStdin = flags.includes('--stdin') || pos[1] === '-';
     const cwd = process.cwd();
     const roleKey = role.toLowerCase().replace(/[\s-]/g, '_').replace(/^cs_/, '');
@@ -304,7 +305,7 @@ switch (command) {
         const value = eq === -1 ? undefined : flag.slice(eq + 1);
         const valid = (name === '--dry' || name === '--stdin')
           ? value === undefined
-          : ['--artifact', '--prompt-file', '--story'].includes(name) && value !== undefined && value !== '';
+          : ['--artifact', '--prompt-file', '--story', '--epic'].includes(name) && value !== undefined && value !== '';
         if (!valid) {
           console.error(`Error: Unknown or malformed flag: ${flag}`);
           process.exit(1);
@@ -316,16 +317,16 @@ switch (command) {
         process.exit(1);
       }
       if (
-        promptFile === '' || storyPath === '' ||
-        bareFlag('prompt-file') || bareFlag('story') ||
+        promptFile === '' || storyPath === '' || epicPath === '' ||
+        bareFlag('prompt-file') || bareFlag('story') || bareFlag('epic') ||
         pos[1] === ''
       ) {
         console.error('Error: Empty input source path or empty prompt provided.');
         process.exit(1);
       }
-      const explicitSources = [promptFile, storyPath, useStdin, inlinePrompt].filter(Boolean).length;
+      const explicitSources = [promptFile, storyPath, epicPath, useStdin, inlinePrompt].filter(Boolean).length;
       if (explicitSources > 1) {
-        console.error('Error: Multiple input sources provided. Please specify only one of --prompt-file, --story, --stdin, or inline prompt.');
+        console.error('Error: Multiple input sources provided. Please specify only one of --prompt-file, --story, --epic, --stdin, or inline prompt.');
         process.exit(1);
       }
       try {
@@ -339,6 +340,12 @@ switch (command) {
           prompt = 'Implement/Execute the following Story according to role charter:\n\n' + rawStory;
           inputSource = `story: ${storyPath}`;
           target = storyPath;
+        } else if (epicPath) {
+          const rawEpic = fs.readFileSync(path.resolve(cwd, epicPath), 'utf8');
+          if (!rawEpic.trim()) throw new Error('Epic file is empty or contains only whitespace.');
+          prompt = 'Implement/Execute the following Epic and all its contained Stories in a single batch according to role charter:\n\n' + rawEpic;
+          inputSource = `epic: ${epicPath}`;
+          target = epicPath;
         } else if (useStdin) {
           prompt = await readStdin();
           inputSource = 'stdin';

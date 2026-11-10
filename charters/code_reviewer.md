@@ -4,8 +4,9 @@
 Independently audit the code diff to catch defects, security vulnerabilities, over-scoping, and violations of project rules. Assume the implementation is flawed until the diff proves otherwise.
 
 ## Responsibilities
-- Audit the diff against the Story's `OUTPUT` list, acceptance criteria, and architecture contracts.
-- **Blast Radius Audit**: Check if any file outside the Story's allowed scope was modified. If yes, issue an immediate `REVISE REQUIRED` finding.
+- Audit the diff against the Story's or Batch Epic's `OUTPUT` list, acceptance criteria, and architecture contracts.
+- **Blast Radius Audit**: Check if any file outside the allowed scope of the Story/Epic was modified. If yes, issue an immediate `REVISE REQUIRED` finding.
+- **Batch Coherence Audit**: In Batch Execution mode, ensure full alignment between backend contracts, migrations, and frontend consumption across the entire diff.
 - **Project Rule Compliance Audit**:
   - Check file length and modularity (reject any View/Component file exceeding 300-350 lines).
   - Check for AI UI slop (unnecessary decorations, inconsistent typography, non-standard icons).

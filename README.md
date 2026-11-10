@@ -43,33 +43,44 @@ Template files are available in `templates/craftsquad/epic-template.md` and `tem
 
 ---
 
-## 3. Delivery Workflow & Targeted HITL Safeguards
+## 3. Delivery Workflow: Dual-Track Triage & Batch Delivery
+
+CraftSquad áp dụng cơ chế điều phối phân cấp và giao việc theo Batch để tối ưu hóa thời gian thực thi:
 
 ```mermaid
 flowchart TD
-    SM["cs-scrum-master"] -->|Triage Story| Route{Route?}
-    Route -->|Route A: Direct| DEV["cs-developer"]
-    Route -->|Route B: UI-First| UI["cs-ui-designer"] --> DEV
-    Route -->|Route C: Arch-First| ARCH["cs-architect"] --> DEV
-    Route -->|Route D: Full Design| ARCH & UI --> DEV
+    User([User Prompt]) --> Triage{Triage Task?}
+    
+    Triage -->|Prompt sửa đổi chi tiết, bugfix, CSS/text| Direct[⚡ Route 0: Direct Fast-Track\nHost Gemini 3.8 Flash]
+    Direct --> DirectDone([Hoàn thành ngay trong vài giây])
 
-    DEV -->|Code Changes| REV["cs-code-reviewer"]
-    REV -->|Diff Audit PASS| TEST["cs-tester"]
-    REV -.->|REVISE REQUIRED < 2| DEV
-    TEST -->|Executable Evidence| GATE["cs-qa-gatekeeper"]
-    TEST -.->|Failed Tests < 2| DEV
+    Triage -->|Yêu cầu mới / Feature / Epic| TeamTrack[🚀 Route A/B/C/D: Agent Team Track]
+    TeamTrack --> Spec[cs-spec-owner: Phân rã Epic & Atomic Stories]
+    Spec --> BatchDev[Batch Developer Claude Code CLI\nThực thi toàn bộ Stories trong 1 lượt]
+    BatchDev --> BatchRev[Batch Reviewer OpenAI Codex CLI\nAudit toàn bộ diff của Epic trong 1 lượt]
+    BatchRev -->|Verdict: PASS| E2ETest[cs-tester Gemini Subagent\nKiểm thử E2E live runtime & Browser Subagent]
+    BatchRev -.->|REVISE REQUIRED < 2| BatchDev
+    E2ETest --> Gate[cs-qa-gatekeeper CLI\nDeterministic exit code 0]
+    E2ETest -.->|Failed Tests < 2| BatchDev
+    Gate --> SignOff([Epic Hoàn Thành])
 
-    GATE -->|Exit Code 0| SignOff([Story Complete])
+    BatchDev -.->|Blast Radius Violation| HITL[🚨 STOP: Targeted HITL]
+    HITL -->|User Decision| TeamTrack
 
-    DEV -.->|Blast Radius Violation| HITL[🚨 STOP: Targeted HITL]
-    ARCH -.->|Major Arch Fork| HITL
-    UI -.->|Core UX Divergence| HITL
-    REV & TEST -.->|Deadlock >= 2 cycles| HITL
-    HITL -->|User Decision| SM
-
+    style Direct fill:#fef3c7,stroke:#f59e0b,stroke-width:2px
     style HITL fill:#fee2e2,stroke:#ef4444,stroke-width:2px
     style SignOff fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+    style DirectDone fill:#dcfce7,stroke:#16a34a,stroke-width:2px
 ```
+
+### Phân cấp Điều phối (Dual-Track Triage)
+- **Route 0 (Direct Fast-Track)**: Dành cho các prompt cụ thể về sửa đổi chi tiết, bugfix đã rõ nguyên nhân, chỉnh sửa styling/text, thay đổi cấu hình 1-2 file. Host Agent (Gemini) thực thi trực tiếp bằng `edit_file` / `write_file` trong vài giây.
+- **Route A/B/C/D (Agent Team Track)**: Dành cho tính năng mới. Áp dụng quy trình **Batch Delivery 1 lượt**:
+  1. **Spec Owner**: Chia Epic và Stories có Input, Output, Given-When-Then criteria.
+  2. **Claude Code CLI**: Nhận toàn bộ Epic (`--epic=path/to/epic.md`), code liền mạch trọn gói trong 1 phiên làm việc.
+  3. **Codex CLI**: Review toàn cảnh diff của cả Epic trong 1 phiên làm việc.
+  4. **cs-tester**: Walk-through toàn bộ tính năng qua live runtime và Browser Subagent.
+  5. **QA Gatekeeper**: Chạy lệnh deterministic test (exit code 0).
 
 ### Autonomous Gates
 By default, the Agent Team progresses autonomously through Gates 1 to 4 as long as contracts are respected, diff checks pass, and tests succeed.

@@ -298,8 +298,9 @@ ${msg}
 async function dispatchRole(roleName, prompt, options = {}) {
   const cwd = options.workingDirectory || process.cwd();
   const resolveFrom = (p) => (path.isAbsolute(p) ? p : path.resolve(cwd, p));
-  if (options.promptFile !== undefined && options.storyPath !== undefined) {
-    throw new Error('Cannot specify both promptFile and storyPath.');
+  const sourceCount = [options.promptFile, options.storyPath, options.epicPath].filter((x) => x !== undefined).length;
+  if (sourceCount > 1) {
+    throw new Error('Cannot specify more than one of promptFile, storyPath, or epicPath.');
   }
   if (options.promptFile !== undefined && !String(options.promptFile).trim()) {
     throw new Error('Invalid empty promptFile provided.');
@@ -307,12 +308,19 @@ async function dispatchRole(roleName, prompt, options = {}) {
   if (options.storyPath !== undefined && !String(options.storyPath).trim()) {
     throw new Error('Invalid empty storyPath provided.');
   }
+  if (options.epicPath !== undefined && !String(options.epicPath).trim()) {
+    throw new Error('Invalid empty epicPath provided.');
+  }
   if (options.promptFile) {
     prompt = fs.readFileSync(resolveFrom(options.promptFile), 'utf8');
   } else if (options.storyPath) {
     const rawStory = fs.readFileSync(resolveFrom(options.storyPath), 'utf8');
     if (!rawStory.trim()) throw new Error('Story file is empty or contains only whitespace.');
     prompt = 'Implement/Execute the following Story according to role charter:\n\n' + rawStory;
+  } else if (options.epicPath) {
+    const rawEpic = fs.readFileSync(resolveFrom(options.epicPath), 'utf8');
+    if (!rawEpic.trim()) throw new Error('Epic file is empty or contains only whitespace.');
+    prompt = 'Implement/Execute the following Epic and all its contained Stories in a single batch according to role charter:\n\n' + rawEpic;
   }
   prompt = String(prompt || '');
   const { config, filePath } = resolveConfig(cwd);
@@ -328,7 +336,7 @@ async function dispatchRole(roleName, prompt, options = {}) {
 
   // The cli engine runs a configured command and never consumes a prompt.
   if (engine !== 'cli' && !prompt.trim()) {
-    throw new Error(`A non-empty prompt, promptFile, or storyPath is required to dispatch role "${roleName}".`);
+    throw new Error(`A non-empty prompt, promptFile, storyPath, or epicPath is required to dispatch role "${roleName}".`);
   }
 
   const model = options.modelOverride || roleConfig.model;
@@ -414,9 +422,10 @@ function getDispatcherTools() {
         type: 'object',
         properties: {
           role: { type: 'string', description: `Squad role id. One of: ${roles.join(', ')}.` },
-          prompt: { type: 'string', description: 'The task, with the context the role needs. Optional tag [effort: low|medium|high|xhigh] overrides reasoning effort. Ignored when promptFile or storyPath is given.' },
+          prompt: { type: 'string', description: 'The task, with the context the role needs. Optional tag [effort: low|medium|high|xhigh] overrides reasoning effort. Ignored when promptFile, storyPath, or epicPath is given.' },
           promptFile: { type: 'string', description: 'Optional path to a file containing the task prompt.' },
           storyPath: { type: 'string', description: 'Optional path to a Story markdown file to execute.' },
+          epicPath: { type: 'string', description: 'Optional path to an Epic markdown file to execute all its stories in batch.' },
           artifactType: { type: 'string', description: `Optional upstream template to apply. ${artifacts}` },
           reasoningEffort: { type: 'string', enum: VALID_EFFORTS, description: 'Optional effort override.' },
           modelOverride: { type: 'string', description: 'Optional one-off model override.' },

@@ -7,7 +7,8 @@ Prove, with real-world executable verification on the target project's live runt
 - Read the project's `AGENTS.md` and verification rules to identify:
   1. The project's runtime environment (containers, local servers, ports, database).
   2. The project's verification tools (e.g. Browser Subagent `/browser`, curl, E2E test suites).
-  3. Acceptance criteria and UI standards.
+  3. Acceptance criteria and UI standards across all stories in the Epic/task.
+- For Batch Epics, systematically verify the full suite of acceptance criteria across all constituent Stories in the live runtime in an integrated pass.
 - **Universal Runtime Introspection**: identify the project archetype, then verify against the live runtime. Archetypes can be combined for multi-tier projects (e.g. A + B for full-stack, verifying both the UI and the persistence layer):
   - **Archetype A (Web Frontend / Full-stack)**: Use the Browser Subagent (`/browser`) or the project-configured E2E runner to open the application, authenticate if required, walk through every Given-When-Then step, inspect browser console logs for errors/warnings, and verify layout and visual tokens per project specifications.
   - **Archetype B (Headless Backend / API)**: Use `curl` or API test runners against live containers/services, verifying status codes, headers, and database persistence.

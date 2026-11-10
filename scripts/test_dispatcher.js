@@ -206,26 +206,33 @@ const test = async (name, fn) => {
     fs.rmSync(tmp, { recursive: true, force: true });
   });
 
-  await test('promptFile and storyPath are loaded by dispatchRole', async () => {
+  await test('promptFile, storyPath, and epicPath are loaded by dispatchRole', async () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-'));
     fs.writeFileSync(path.join(tmp, 'p.txt'), 'PROMPT-FILE-MARKER');
     fs.writeFileSync(path.join(tmp, 'story.md'), '# Story\nSTORY-MARKER');
+    fs.writeFileSync(path.join(tmp, 'epic.md'), '# Epic\nEPIC-MARKER');
     const a = await dispatchRole('developer', '', { dryRun: true, workingDirectory: tmp, promptFile: 'p.txt' });
     assert(a.compiledPrompt.includes('PROMPT-FILE-MARKER'));
     const b = await dispatchRole('developer', '', { dryRun: true, workingDirectory: tmp, storyPath: 'story.md' });
     assert(b.compiledPrompt.includes('STORY-MARKER'));
     assert(b.compiledPrompt.includes('Implement/Execute the following Story'));
+    const c = await dispatchRole('developer', '', { dryRun: true, workingDirectory: tmp, epicPath: 'epic.md' });
+    assert(c.compiledPrompt.includes('EPIC-MARKER'));
+    assert(c.compiledPrompt.includes('Implement/Execute the following Epic and all its contained Stories in a single batch'));
     await assert.rejects(() => dispatchRole('developer', '', { dryRun: true, workingDirectory: tmp, promptFile: 'missing.txt' }));
     fs.rmSync(tmp, { recursive: true, force: true });
   });
 
-  await test('empty or whitespace-only story file is rejected', async () => {
+  await test('empty or whitespace-only story and epic files are rejected', async () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-'));
     fs.writeFileSync(path.join(tmp, 'empty.md'), '');
     fs.writeFileSync(path.join(tmp, 'ws.md'), '  \n\t\n');
-    const msg = /Story file is empty or contains only whitespace/;
-    await assert.rejects(() => dispatchRole('developer', '', { dryRun: true, workingDirectory: tmp, storyPath: 'empty.md' }), msg);
-    await assert.rejects(() => dispatchRole('developer', '', { dryRun: true, workingDirectory: tmp, storyPath: 'ws.md' }), msg);
+    const msgStory = /Story file is empty or contains only whitespace/;
+    await assert.rejects(() => dispatchRole('developer', '', { dryRun: true, workingDirectory: tmp, storyPath: 'empty.md' }), msgStory);
+    await assert.rejects(() => dispatchRole('developer', '', { dryRun: true, workingDirectory: tmp, storyPath: 'ws.md' }), msgStory);
+    const msgEpic = /Epic file is empty or contains only whitespace/;
+    await assert.rejects(() => dispatchRole('developer', '', { dryRun: true, workingDirectory: tmp, epicPath: 'empty.md' }), msgEpic);
+    await assert.rejects(() => dispatchRole('developer', '', { dryRun: true, workingDirectory: tmp, epicPath: 'ws.md' }), msgEpic);
     fs.rmSync(tmp, { recursive: true, force: true });
   });
 
@@ -245,7 +252,7 @@ const test = async (name, fn) => {
   });
 
   await test('empty or whitespace-only prompt is rejected', async () => {
-    const msg = /A non-empty prompt, promptFile, or storyPath is required to dispatch role "developer"/;
+    const msg = /A non-empty prompt, promptFile, storyPath, or epicPath is required to dispatch role "developer"/;
     await assert.rejects(() => dispatchRole('developer', '', { dryRun: true, workingDirectory: root }), msg);
     await assert.rejects(() => dispatchRole('developer', '   \n\t', { dryRun: true, workingDirectory: root }), msg);
     await assert.rejects(() => dispatchRole('developer', undefined, { dryRun: true, workingDirectory: root }), msg);
@@ -283,11 +290,13 @@ const test = async (name, fn) => {
     }
   });
 
-  await test('dispatchRole rejects conflicting or empty promptFile/storyPath options', async () => {
+  await test('dispatchRole rejects conflicting or empty promptFile/storyPath/epicPath options', async () => {
     const o = { dryRun: true, workingDirectory: root };
-    await assert.rejects(() => dispatchRole('developer', '', { ...o, promptFile: 'a', storyPath: 'b' }), /Cannot specify both promptFile and storyPath/);
+    await assert.rejects(() => dispatchRole('developer', '', { ...o, promptFile: 'a', storyPath: 'b' }), /Cannot specify more than one of promptFile, storyPath, or epicPath/);
+    await assert.rejects(() => dispatchRole('developer', '', { ...o, promptFile: 'a', epicPath: 'b' }), /Cannot specify more than one of promptFile, storyPath, or epicPath/);
     await assert.rejects(() => dispatchRole('developer', '', { ...o, promptFile: '  ' }), /Invalid empty promptFile/);
     await assert.rejects(() => dispatchRole('developer', '', { ...o, storyPath: '' }), /Invalid empty storyPath/);
+    await assert.rejects(() => dispatchRole('developer', '', { ...o, epicPath: '  ' }), /Invalid empty epicPath/);
   });
 
   await test('CLI dispatch rejects invalid input with exit code 1', () => {
@@ -314,7 +323,7 @@ const test = async (name, fn) => {
   await test('CLI dispatch rejects unknown or malformed flags with exit code 1', () => {
     const cli = path.join(root, 'bin', 'cli.js');
     const run = (...a) => spawnSync(process.execPath, [cli, 'dispatch', ...a], { cwd: root, encoding: 'utf8', timeout: 30000 });
-    for (const bad of ['--stdin=ignored', '--dry=1', '--foo', '--artifact=', '--story=', '--prompt-file=']) {
+    for (const bad of ['--stdin=ignored', '--dry=1', '--foo', '--artifact=', '--story=', '--prompt-file=', '--epic=']) {
       const r = run('developer', 'x', bad);
       assert.strictEqual(r.status, 1, `${bad}: ${r.stderr}`);
       assert(r.stderr.includes(`Error: Unknown or malformed flag: ${bad}`), `${bad}: ${r.stderr}`);
