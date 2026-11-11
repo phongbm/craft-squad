@@ -45,14 +45,15 @@ All essential workflows can be executed directly from the repository root:
 | Command | Action | Purpose |
 |---|---|---|
 | `npm start` / `npm run tool:start` | `node tool/server.js` | Launches the Local Management Studio at `http://localhost:4200` |
-| `npm test` / `npm run plugin:test` | `npm --prefix plugin run test:dispatcher` | Runs the full 27-test offline verification suite |
+| `npm test` / `npm run plugin:test` | `npm --prefix plugin run test:dispatcher` | Runs the full 37-test offline verification suite |
 | `npm run cx` | `node tool/bin/cx.js` | Standalone CLI for Codex profile switching & rotation |
 | `npm run codex:list` | `node tool/bin/cx.js list` | Lists all registered Codex accounts, active profile, and token status |
 | `npm run codex:rotate` | `node tool/bin/cx.js rotate` | Switches to the next valid account with least quota usage |
 | `npm run codex:sync` | `node tool/bin/cx.js sync` | Bi-directional token synchronization (`Sync-on-Switch`) |
 | `npm run codex:doctor` | `node tool/bin/cx.js doctor` | Diagnostics for Codex CLI, configs, and account health |
-| `npm run plugin:install` | `node plugin/bin/cli.js install` | Deploys plugin as a Junction Link into `~/.gemini/config/plugins/craft-squad` |
-| `npm run plugin:upgrade` | `node plugin/bin/cli.js upgrade` | Synchronizes upstream templates and refreshes the Junction Link |
+| `npm run plugin:install` | `node plugin/bin/cli.js install` | Stages and deploys clean plugin files into `~/.gemini/config/plugins/craft-squad` |
+| `npm run plugin:update` / `plugin:upgrade` | `node plugin/bin/cli.js update` | Pulls latest git changes (`--no-pull` to skip) and redeploys the plugin |
+| `npm run plugin:uninstall` | `node plugin/bin/cli.js uninstall` | Stops CraftSquad MCP server, removes plugin files, and cleans `config.json` |
 | `npm run plugin:status` | `node plugin/bin/cli.js status` | Inspects CLI engines (Claude, Codex), models, and plugin paths |
 | `npm run plugin:config` | `node plugin/bin/cli.js config` | Displays or updates role-engine mappings in `squad.config.json` |
 | `npm run sync:upstream` | `node plugin/scripts/sync-upstream.js` | Fetches latest upstream BMAD-METHOD & GitHub Spec-Kit templates |
@@ -167,4 +168,4 @@ When developing, refactoring, or extending CraftSquad itself:
      ```bash
      npm test
      ```
-   - All 27 unit tests in `plugin/scripts/test_dispatcher.js` must PASS cleanly.
+   - All unit tests in `plugin/scripts/test_dispatcher.js` (37 tests) must PASS cleanly.

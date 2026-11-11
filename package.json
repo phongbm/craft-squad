@@ -7,6 +7,9 @@
     "plugin",
     "tool"
   ],
+  "bin": {
+    "craft-squad": "./plugin/bin/cli.js"
+  },
   "scripts": {
     "start": "node tool/server.js",
     "tool:start": "node tool/server.js",
@@ -21,6 +24,7 @@
     "plugin:test": "npm --prefix plugin run test:dispatcher",
     "plugin:status": "node plugin/bin/cli.js status",
     "plugin:install": "node plugin/bin/cli.js install",
+    "plugin:update": "node plugin/bin/cli.js update",
     "plugin:upgrade": "node plugin/bin/cli.js upgrade",
     "plugin:uninstall": "node plugin/bin/cli.js uninstall",
     "plugin:config": "node plugin/bin/cli.js config",
@@ -37,6 +41,10 @@
     "codex"
   ],
   "author": "CraftX Tech",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/phongbm/craft-squad.git"
+  },
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"

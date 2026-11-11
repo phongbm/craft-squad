@@ -14,5 +14,9 @@
     "model-switcher"
   ],
   "author": "CraftXTech Team",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/phongbm/craft-squad.git"
+  },
   "license": "MIT"
 }

@@ -2,7 +2,7 @@
   "mcpServers": {
     "craft-squad": {
       "command": "node",
-      "args": ["mcp-server/index.js"],
+      "args": ["mcp-server/index.js", "--craft-squad-mcp"],
       "timeoutSeconds": 900,
       "env": {
         "ANTIGRAVITY_TIMEOUT_MS": "900000"

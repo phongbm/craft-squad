@@ -347,5 +347,366 @@ const test = async (name, fn) => {
     }
   });
 
+  await test('isCraftSquadMcpCommand matches only CraftSquad MCP processes; killRunningMcpServer never targets others', () => {
+    const cli = require('../bin/cli.js');
+    assert.strictEqual(cli.isCraftSquadMcpCommand('node mcp-server/index.js --craft-squad-mcp'), true);
+    assert.strictEqual(cli.isCraftSquadMcpCommand('node C:/x/craft-squad/mcp-server/index.js'), true);
+    assert.strictEqual(cli.isCraftSquadMcpCommand('node C:\\x\\craft-squad\\mcp-server\\index.js'), true);
+    assert.strictEqual(cli.isCraftSquadMcpCommand('node /x/other-plugin/mcp-server/index.js'), false);
+    assert.strictEqual(cli.isCraftSquadMcpCommand(''), false);
+    assert.strictEqual(cli.isCraftSquadMcpCommand('editor.exe --search=--craft-squad-mcp'), false);
+    assert.strictEqual(cli.isCraftSquadMcpCommand('node C:/craft-squad-tools/other/mcp-server/index.js'), false);
+    assert.strictEqual(cli.isCraftSquadMcpCommand('node C:/a/craft-squad/mcp-server/index.js'), true);
+    assert.strictEqual(cli.isCraftSquadMcpCommand('"C:\\Program Files\\nodejs\\node.exe" mcp-server/index.js --craft-squad-mcp'), true);
+    assert.strictEqual(cli.isCraftSquadMcpCommand('node mcp-server/index.js'), false);
+    assert.strictEqual(cli.isCraftSquadMcpCommand('node -e "setInterval(()=>{},1000)" C:/x/craft-squad/mcp-server/index.js'), false);
+    assert.strictEqual(cli.isCraftSquadMcpCommand('node other.js C:/x/craft-squad/mcp-server/index.js'), false);
+    assert.strictEqual(cli.isCraftSquadMcpCommand('node --eval=1 C:/x/craft-squad/mcp-server/index.js'), false);
+    assert.strictEqual(cli.isCraftSquadMcpCommand('node -r ./pre.js C:/x/craft-squad/mcp-server/index.js'), true);
+    assert.strictEqual(cli.isCraftSquadMcpCommand('node --max-old-space-size 512 -- C:/x/craft-squad/mcp-server/index.js'), true);
+    assert.strictEqual(cli.isCraftSquadMcpCommand('node --diagnostic-dir C:/x/craft-squad/mcp-server/index.js --eval "console.log(123)"'), false);
+    assert.strictEqual(cli.isCraftSquadMcpCommand('node --unknown-flag C:/x/craft-squad/mcp-server/index.js'), false);
+    assert.strictEqual(cli.isCraftSquadMcpCommand('node --no-warnings mcp-server/index.js --craft-squad-mcp'), true);
+
+    const procs = [
+      { pid: 111, cmd: 'node /home/u/craft-squad/mcp-server/index.js' },
+      { pid: 222, cmd: 'node /home/u/other-plugin/mcp-server/index.js' },
+      { pid: 333, cmd: 'node mcp-server/index.js --craft-squad-mcp' },
+      { pid: 444, cmd: 'node unrelated.js' }
+    ];
+    const issued = [];
+    const fakeExec = (cmd) => {
+      if (/Win32_Process|^ps /.test(cmd)) {
+        return process.platform === 'win32'
+          ? JSON.stringify(procs.map((p) => ({ ProcessId: p.pid, CommandLine: p.cmd })))
+          : procs.map((p) => `${p.pid} ${p.cmd}`).join('\n');
+      }
+      issued.push(cmd);
+      return '';
+    };
+    const prev = process.env.CRAFTSQUAD_SKIP_MCP_KILL;
+    delete process.env.CRAFTSQUAD_SKIP_MCP_KILL;
+    try {
+      cli.killRunningMcpServer(fakeExec);
+    } finally {
+      if (prev !== undefined) process.env.CRAFTSQUAD_SKIP_MCP_KILL = prev;
+    }
+    const killed = issued.map((c) => Number(c.match(/\d+/)[0])).sort();
+    assert.deepStrictEqual(killed, [111, 333]);
+    const skipped = [];
+    process.env.CRAFTSQUAD_SKIP_MCP_KILL = '1';
+    try { cli.killRunningMcpServer((c) => { skipped.push(c); return ''; }); } finally { delete process.env.CRAFTSQUAD_SKIP_MCP_KILL; }
+    assert.strictEqual(skipped.length, 0, 'skip env must short-circuit');
+  });
+
+  await test('install refuses overlapping source/target and corrupt config.json fails without being clobbered', () => {
+    const cli = path.join(root, 'bin', 'cli.js');
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-home-'));
+    const cfgDir = path.join(home, '.gemini', 'config');
+    const cfgPath = path.join(cfgDir, 'config.json');
+    const target = path.join(cfgDir, 'plugins', 'craft-squad');
+    const env = { ...process.env, HOME: home, USERPROFILE: home, CRAFTSQUAD_SKIP_MCP_KILL: '1' };
+    const run = (script, ...a) => spawnSync(process.execPath, [script, ...a], { cwd: root, encoding: 'utf8', timeout: 60000, env });
+    try {
+      fs.mkdirSync(cfgDir, { recursive: true });
+      const corrupt = '{ not valid json';
+      fs.writeFileSync(cfgPath, corrupt);
+      const bad = run(cli, 'install');
+      assert.notStrictEqual(bad.status, 0, 'corrupt config must fail the install');
+      assert.strictEqual(fs.readFileSync(cfgPath, 'utf8'), corrupt, 'corrupt config must not be clobbered');
+      const badUninstall = run(cli, 'uninstall');
+      assert.notStrictEqual(badUninstall.status, 0);
+      assert.strictEqual(fs.readFileSync(cfgPath, 'utf8'), corrupt);
+
+      fs.rmSync(cfgPath);
+      assert.strictEqual(run(cli, 'install').status, 0);
+      const sentinel = path.join(target, 'sentinel.txt');
+      fs.writeFileSync(sentinel, 'keep');
+      const self = run(path.join(target, 'bin', 'cli.js'), 'install');
+      assert.strictEqual(self.status, 1, self.stdout + self.stderr);
+      assert(/same or overlap/.test(self.stderr), self.stderr);
+      assert(fs.existsSync(sentinel), 'installed directory must survive a refused self-install');
+
+      fs.rmSync(target, { recursive: true, force: true });
+      fs.symlinkSync(root, target, 'junction');
+      const linked = run(cli, 'install');
+      assert.strictEqual(linked.status, 1, linked.stdout + linked.stderr);
+      assert(fs.existsSync(path.join(root, 'plugin.json')), 'source repo must be intact');
+    } finally {
+      try { if (fs.lstatSync(target).isSymbolicLink()) fs.unlinkSync(target); } catch (_) { /* absent */ }
+      fs.rmSync(home, { recursive: true, force: true });
+    }
+  });
+
+  await test('CLI install, upgrade --no-pull and uninstall manage plugin dir and config.json in an isolated home', () => {
+    const crypto = require('crypto');
+    const cli = path.join(root, 'bin', 'cli.js');
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-home-'));
+    const cfgDir = path.join(home, '.gemini', 'config');
+    const cfgPath = path.join(cfgDir, 'config.json');
+    const target = path.join(cfgDir, 'plugins', 'craft-squad');
+    const tracked = ['templates', 'UPSTREAM_EVIDENCE.md'].map((p) => path.join(root, p));
+    const hashTree = (p, h) => {
+      const st = fs.statSync(p);
+      if (st.isDirectory()) {
+        for (const f of fs.readdirSync(p).sort()) hashTree(path.join(p, f), h);
+      } else {
+        h.update(path.relative(root, p)).update(fs.readFileSync(p));
+      }
+      return h;
+    };
+    const snapshot = () => {
+      const git = spawnSync('git', ['status', '--porcelain', '--', ...tracked], { cwd: root, encoding: 'utf8' });
+      assert.strictEqual(git.status, 0, `git status failed: ${git.stderr}`);
+      const h = crypto.createHash('sha256');
+      tracked.forEach((p) => hashTree(p, h));
+      return `${git.stdout}\n${h.digest('hex')}`;
+    };
+    try {
+      fs.mkdirSync(target, { recursive: true });
+      fs.writeFileSync(path.join(target, 'stale.txt'), 'old');
+      fs.writeFileSync(cfgPath, JSON.stringify({ keep: 1, plugins: { other: { enabled: true }, 'craft-squad': { custom: 'x', enabled: false } } }));
+      const run = (...a) => {
+        const r = spawnSync(process.execPath, [cli, ...a], { cwd: root, encoding: 'utf8', timeout: 60000, env: { ...process.env, HOME: home, USERPROFILE: home, CRAFTSQUAD_SKIP_MCP_KILL: '1' } });
+        assert.strictEqual(r.status, 0, r.stderr + r.stdout);
+      };
+      const readCfg = () => JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+      const before = snapshot();
+
+      run('install');
+      assert(!fs.existsSync(path.join(target, 'stale.txt')), 'stale file should be removed');
+      assert(fs.existsSync(path.join(target, 'plugin.json')));
+      assert(fs.existsSync(path.join(target, 'README.md')));
+      assert(fs.existsSync(path.join(target, 'assets', 'logo.svg')));
+      assert(fs.existsSync(path.join(target, 'rules', 'AGENTS.md')));
+      assert.strictEqual(readCfg().plugins['craft-squad'].enabled, true);
+      assert.strictEqual(readCfg().plugins['craft-squad'].custom, 'x');
+      assert.strictEqual(readCfg().keep, 1);
+      assert(!fs.readdirSync(path.dirname(target)).some((f) => /\.(staging|bak)-/.test(f)), 'no staging/backup dirs left behind');
+
+      fs.writeFileSync(path.join(target, 'stale.txt'), 'old');
+      run('upgrade', '--no-pull');
+      assert(!fs.existsSync(path.join(target, 'stale.txt')));
+      assert(fs.existsSync(path.join(target, 'plugin.json')));
+      assert.strictEqual(snapshot(), before, 'upgrade must not modify templates or UPSTREAM_EVIDENCE.md');
+
+      run('uninstall');
+      assert(!fs.existsSync(target), 'plugin dir should be removed');
+      assert(!('craft-squad' in readCfg().plugins));
+      assert(readCfg().plugins.other.enabled, 'other plugins must be preserved');
+      assert(!fs.readdirSync(cfgDir).some((f) => f.endsWith('.tmp')), 'no temp files left behind');
+    } finally {
+      fs.rmSync(home, { recursive: true, force: true });
+    }
+  });
+
+  await test('uninstall removes a junctioned plugin dir without touching its source', () => {
+    const cli = path.join(root, 'bin', 'cli.js');
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-home-'));
+    const src = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-src-'));
+    const target = path.join(home, '.gemini', 'config', 'plugins', 'craft-squad');
+    try {
+      fs.writeFileSync(path.join(src, 'keep.txt'), 'keep');
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.symlinkSync(src, target, 'junction');
+      const r = spawnSync(process.execPath, [cli, 'uninstall'], { cwd: root, encoding: 'utf8', env: { ...process.env, HOME: home, USERPROFILE: home, CRAFTSQUAD_SKIP_MCP_KILL: '1' } });
+      assert.strictEqual(r.status, 0, r.stderr + r.stdout);
+      assert.throws(() => fs.lstatSync(target), { code: 'ENOENT' });
+      assert(fs.existsSync(path.join(src, 'keep.txt')), 'junction source must survive uninstall');
+    } finally {
+      try { if (fs.lstatSync(target).isSymbolicLink()) fs.unlinkSync(target); } catch (_) { /* absent */ }
+      fs.rmSync(home, { recursive: true, force: true });
+      fs.rmSync(src, { recursive: true, force: true });
+    }
+  });
+
+  await test('installGlobalPlugin rolls back junction and directory targets when config handling fails', () => {
+    const cli = path.join(root, 'bin', 'cli.js');
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-home-'));
+    const src = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-src-'));
+    const cfgDir = path.join(home, '.gemini', 'config');
+    const cfgPath = path.join(cfgDir, 'config.json');
+    const target = path.join(cfgDir, 'plugins', 'craft-squad');
+    const env = { ...process.env, HOME: home, USERPROFILE: home, CRAFTSQUAD_SKIP_MCP_KILL: '1' };
+    const script = `require(${JSON.stringify(cli)}).installGlobalPlugin({ enableConfig: () => { throw new Error('config write failed'); } });`;
+    const install = () => spawnSync(process.execPath, ['-e', script], { cwd: root, encoding: 'utf8', env });
+    const noLeftovers = () => assert(!fs.readdirSync(path.dirname(target)).some((f) => /\.(staging|bak)-/.test(f)), 'no staging/backup dirs left behind');
+    try {
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(path.join(src, 'keep.txt'), 'keep');
+      fs.symlinkSync(src, target, 'junction');
+      let r = install();
+      assert.notStrictEqual(r.status, 0);
+      assert(/config write failed/.test(r.stderr), r.stderr);
+      assert(fs.lstatSync(target).isSymbolicLink(), 'junction must be restored');
+      assert.strictEqual(fs.realpathSync(target), fs.realpathSync(src));
+      assert(fs.existsSync(path.join(src, 'keep.txt')));
+      noLeftovers();
+
+      fs.unlinkSync(target);
+      fs.mkdirSync(target);
+      fs.writeFileSync(path.join(target, 'orig.txt'), 'orig');
+      r = install();
+      assert.notStrictEqual(r.status, 0);
+      assert.strictEqual(fs.readFileSync(path.join(target, 'orig.txt'), 'utf8'), 'orig', 'original directory must be restored');
+      assert(!fs.existsSync(path.join(target, 'plugin.json')), 'new deployment must be rolled back');
+      noLeftovers();
+
+      fs.writeFileSync(cfgPath, '{ not valid json');
+      r = install();
+      assert.notStrictEqual(r.status, 0);
+      assert(/Could not read Antigravity configuration/.test(r.stderr), r.stderr);
+      assert(fs.existsSync(path.join(target, 'orig.txt')), 'malformed config must fail before any swap');
+      noLeftovers();
+    } finally {
+      fs.rmSync(home, { recursive: true, force: true });
+      fs.rmSync(src, { recursive: true, force: true });
+    }
+  });
+
+  await test('writeJsonAtomic preserves the existing file mode and leaves no temp file', () => {
+    const cli = require('../bin/cli.js');
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-json-'));
+    const file = path.join(dir, 'config.json');
+    try {
+      fs.writeFileSync(file, '{}', { mode: 0o600 });
+      fs.chmodSync(file, 0o600);
+      cli.writeJsonAtomic(file, { a: 1 });
+      assert.deepStrictEqual(JSON.parse(fs.readFileSync(file, 'utf8')), { a: 1 });
+      if (process.platform !== 'win32') assert.strictEqual(fs.statSync(file).mode & 0o777, 0o600);
+      assert(!fs.readdirSync(dir).some((f) => f.endsWith('.tmp')), 'no temp file left behind');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  await test('writeJsonAtomic removes its temp file and keeps original bytes when rename fails', () => {
+    const cli = require('../bin/cli.js');
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-json-fail-'));
+    const file = path.join(dir, 'config.json');
+    const realRename = fs.renameSync;
+    try {
+      fs.writeFileSync(file, '{"orig":true}');
+      const before = fs.readFileSync(file);
+      fs.renameSync = () => { throw new Error('rename boom'); };
+      assert.throws(() => cli.writeJsonAtomic(file, { a: 1 }), /rename boom/);
+      fs.renameSync = realRename;
+      assert(fs.readFileSync(file).equals(before), 'original bytes untouched');
+      assert(!fs.readdirSync(dir).some((f) => f.endsWith('.tmp')), 'temp file removed');
+    } finally {
+      fs.renameSync = realRename;
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  await test('installGlobalPlugin rolls back when the real config writeJsonAtomic rename fails', () => {
+    const cli = path.join(root, 'bin', 'cli.js');
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-home-'));
+    const src = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-src-'));
+    const cfgDir = path.join(home, '.gemini', 'config');
+    const cfgPath = path.join(cfgDir, 'config.json');
+    const target = path.join(cfgDir, 'plugins', 'craft-squad');
+    const env = { ...process.env, HOME: home, USERPROFILE: home, CRAFTSQUAD_SKIP_MCP_KILL: '1' };
+    const script = `const fs=require('fs');const r=fs.renameSync;`
+      + `fs.renameSync=(a,b)=>{if(String(b).endsWith('config.json'))throw new Error('rename boom');return r(a,b);};`
+      + `require(${JSON.stringify(cli)}).installGlobalPlugin();`;
+    const install = () => spawnSync(process.execPath, ['-e', script], { cwd: root, encoding: 'utf8', env });
+    const artifacts = (d) => fs.readdirSync(d).filter((f) => /\.tmp$|\.staging-|\.bak-/.test(f));
+    try {
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(cfgPath, '{"plugins":{}}');
+      const before = fs.readFileSync(cfgPath);
+      fs.writeFileSync(path.join(src, 'keep.txt'), 'keep');
+      fs.symlinkSync(src, target, 'junction');
+      let r = install();
+      assert.notStrictEqual(r.status, 0);
+      assert(/rename boom/.test(r.stderr), r.stderr);
+      assert(fs.lstatSync(target).isSymbolicLink(), 'junction must be restored');
+      assert.strictEqual(fs.realpathSync(target), fs.realpathSync(src));
+      assert(fs.readFileSync(cfgPath).equals(before), 'config untouched');
+      assert.deepStrictEqual(artifacts(cfgDir).concat(artifacts(path.dirname(target))), []);
+
+      fs.unlinkSync(target);
+      fs.mkdirSync(target);
+      fs.writeFileSync(path.join(target, 'orig.txt'), 'orig');
+      r = install();
+      assert.notStrictEqual(r.status, 0);
+      assert.strictEqual(fs.readFileSync(path.join(target, 'orig.txt'), 'utf8'), 'orig');
+      assert(!fs.existsSync(path.join(target, 'plugin.json')), 'new deployment rolled back');
+      assert(fs.readFileSync(cfgPath).equals(before), 'config untouched');
+      assert.deepStrictEqual(artifacts(cfgDir).concat(artifacts(path.dirname(target))), []);
+    } finally {
+      fs.rmSync(home, { recursive: true, force: true });
+      fs.rmSync(src, { recursive: true, force: true });
+    }
+  });
+
+  await test('upgrade pulls a new commit and re-executes the pulled CLI; failures exit non-zero', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-upg-'));
+    const remote = path.join(tmp, 'remote.git');
+    const seed = path.join(tmp, 'seed');
+    const clone = path.join(tmp, 'clone');
+    const marker = path.join(tmp, 'marker.json');
+    const env = { ...process.env, HOME: tmp, USERPROFILE: tmp, CRAFTSQUAD_SKIP_MCP_KILL: '1', GIT_TERMINAL_PROMPT: '0' };
+    const git = (cwd, ...a) => {
+      const r = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', '-c', 'commit.gpgsign=false', ...a], { cwd, encoding: 'utf8', env });
+      assert.strictEqual(r.status, 0, `git ${a.join(' ')}: ${r.stderr}`);
+      return r;
+    };
+    const stub = (exitCode) => `require('fs').writeFileSync(${JSON.stringify(marker)}, JSON.stringify(process.argv.slice(2)));\nprocess.exit(${exitCode});\n`;
+    const upgrade = () => spawnSync(process.execPath, [path.join(clone, 'plugin', 'bin', 'cli.js'), 'upgrade', '--sync-upstream'], { cwd: clone, encoding: 'utf8', timeout: 60000, env });
+    try {
+      fs.mkdirSync(path.join(seed, 'plugin', 'bin'), { recursive: true });
+      fs.copyFileSync(path.join(root, 'bin', 'cli.js'), path.join(seed, 'plugin', 'bin', 'cli.js'));
+      fs.cpSync(path.join(root, 'mcp-server'), path.join(seed, 'plugin', 'mcp-server'), { recursive: true, filter: (s) => !s.includes('node_modules') });
+      git(tmp, 'init', '--bare', remote);
+      git(seed, 'init');
+      git(seed, 'add', '-A');
+      git(seed, 'commit', '-m', 'init');
+      git(seed, 'branch', '-M', 'main');
+      git(seed, 'remote', 'add', 'origin', remote);
+      git(seed, 'push', '-u', 'origin', 'main');
+      git(tmp, 'clone', '--branch', 'main', remote, clone);
+
+      // New remote commit replaces the CLI with a stub that records its arguments.
+      fs.writeFileSync(path.join(seed, 'plugin', 'bin', 'cli.js'), stub(0));
+      git(seed, 'commit', '-am', 'stub cli');
+      git(seed, 'push');
+      let r = upgrade();
+      assert.strictEqual(r.status, 0, r.stdout + r.stderr);
+      assert.deepStrictEqual(JSON.parse(fs.readFileSync(marker, 'utf8')), ['upgrade', '--no-pull', '--sync-upstream']);
+
+      // A failing pulled CLI propagates its exit code.
+      fs.rmSync(marker);
+      git(clone, 'reset', '--hard', 'HEAD~1');
+      fs.writeFileSync(path.join(seed, 'plugin', 'bin', 'cli.js'), stub(3));
+      git(seed, 'commit', '-am', 'failing stub');
+      git(seed, 'push');
+      r = upgrade();
+      assert.strictEqual(r.status, 3, r.stdout + r.stderr);
+
+      // A diverged remote cannot fast-forward.
+      git(clone, 'reset', '--hard', 'HEAD~2');
+      fs.writeFileSync(path.join(clone, 'local.txt'), 'x');
+      git(clone, 'add', '-A');
+      git(clone, 'commit', '-m', 'local divergence');
+      r = upgrade();
+      assert.strictEqual(r.status, 1, r.stdout + r.stderr);
+      assert(/git pull failed/.test(r.stderr), r.stderr);
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  await test('CLI help and sibling tool cx forwarding work', () => {
+    const cli = path.join(root, 'bin', 'cli.js');
+    const help = spawnSync(process.execPath, [cli, '--help'], { cwd: root, encoding: 'utf8' });
+    assert.strictEqual(help.status, 0, help.stderr);
+    assert(help.stdout.includes('CraftSquad CLI') && help.stdout.includes('studio'));
+    const cxHelp = spawnSync(process.execPath, [cli, 'cx', '--help'], { cwd: root, encoding: 'utf8' });
+    assert.strictEqual(cxHelp.status, 0, cxHelp.stderr);
+    assert(cxHelp.stdout.includes('CraftSquad Codex Account Switcher'));
+  });
+
   console.log(`\n${passed} tests passed${process.exitCode ? ' (with failures)' : ''}`);
 })();

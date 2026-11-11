@@ -3,12 +3,15 @@
   "version": "3.1.0",
   "displayName": "CraftSquad",
   "description": "Role-based autonomous agent team with multi-engine routing (Claude, Codex, Gemini), dual-track delivery, and adversarial quality gates.",
+  "logo": "assets/logo.svg",
   "author": {
-    "name": "CraftXTech Team"
+    "name": "CraftXTech Team",
+    "url": "https://github.com/phongbm/craft-squad"
   },
+  "homepage": "https://github.com/phongbm/craft-squad",
   "repository": {
     "type": "git",
-    "url": "https://github.com/craftxtech/craft-squad"
+    "url": "https://github.com/phongbm/craft-squad"
   },
   "suggestedPrompts": [
     "Write the spec for this feature with the Spec Owner, then hand it to the Scrum Master",

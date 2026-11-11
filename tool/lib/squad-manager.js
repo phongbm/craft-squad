@@ -5,6 +5,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 const rootDir = path.resolve(__dirname, '../..');
 const pluginDir = path.join(rootDir, 'plugin');
@@ -36,6 +37,20 @@ const PRESETS = {
   ]
 };
 
+function writeJsonAtomic(filePath, data) {
+  const tmpPath = `${filePath}.${process.pid}.tmp`;
+  let mode = 0o644;
+  try { mode = fs.statSync(filePath).mode & 0o777; } catch (_) {}
+  try {
+    const fd = fs.openSync(tmpPath, 'wx', mode);
+    try { fs.writeFileSync(fd, JSON.stringify(data, null, 2) + '\n', 'utf8'); } finally { fs.closeSync(fd); }
+    fs.renameSync(tmpPath, filePath);
+  } catch (err) {
+    fs.rmSync(tmpPath, { force: true });
+    throw err;
+  }
+}
+
 function resolveConfigFile(customDir) {
   const candidates = [];
   if (customDir) {
@@ -43,6 +58,10 @@ function resolveConfigFile(customDir) {
     candidates.push(path.join(customDir, '.agents', 'squad.config.json'));
   }
   candidates.push(path.join(process.cwd(), 'squad.config.json'));
+  candidates.push(path.join(process.cwd(), '.agents', 'squad.config.json'));
+  if (path.resolve(process.cwd()) !== path.resolve(rootDir)) {
+    candidates.push(path.join(os.homedir(), '.gemini', 'config', 'plugins', 'craft-squad', 'squad.config.json'));
+  }
   candidates.push(path.join(pluginDir, 'squad.config.json'));
   candidates.push(path.join(rootDir, 'squad.config.json'));
 
@@ -96,7 +115,7 @@ function updateRoleConfig(role, { engine, model, reasoningEffort, command }, tar
       delete config.roles[roleKey].command;
     }
 
-    fs.writeFileSync(filePath, JSON.stringify(config, null, 2) + '\n', 'utf8');
+    writeJsonAtomic(filePath, config);
     return {
       success: true,
       configPath: filePath,
@@ -119,7 +138,7 @@ function updateEngineDefault(engine, model, targetDir) {
     if (!config.engineDefaults) config.engineDefaults = {};
     config.engineDefaults[engine] = model;
 
-    fs.writeFileSync(filePath, JSON.stringify(config, null, 2) + '\n', 'utf8');
+    writeJsonAtomic(filePath, config);
     return { success: true, engineDefaults: config.engineDefaults };
   } catch (err) {
     return { success: false, error: err.message };
