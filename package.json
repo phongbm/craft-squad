@@ -3,6 +3,10 @@
   "version": "3.1.0",
   "private": true,
   "description": "CraftSquad Monorepo: Antigravity Plugin & Local Management Dashboard",
+  "workspaces": [
+    "plugin",
+    "tool"
+  ],
   "scripts": {
     "start": "node tool/server.js",
     "tool:start": "node tool/server.js",
@@ -13,6 +17,7 @@
     "codex:rotate": "node tool/bin/cx.js rotate",
     "codex:sync": "node tool/bin/cx.js sync",
     "codex:doctor": "node tool/bin/cx.js doctor",
+    "test": "npm --prefix plugin run test:dispatcher",
     "plugin:test": "npm --prefix plugin run test:dispatcher",
     "plugin:status": "node plugin/bin/cli.js status",
     "plugin:install": "node plugin/bin/cli.js install",
@@ -31,7 +36,7 @@
     "claude-code",
     "codex"
   ],
-  "author": "CraftXTech Team",
+  "author": "CraftX Tech",
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
