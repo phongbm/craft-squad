@@ -28,9 +28,11 @@ craft-squad/
 │
 ├── tool/                            # 🚀 Local Web Management Tool (Zero Dependencies)
 │   ├── server.js                    # Native Node.js HTTP & REST API server (port 4200)
+│   ├── bin/
+│   │   └── cx.js                    # Standalone CLI tool for Codex profile switching
 │   ├── lib/
 │   │   ├── squad-manager.js         # Reads and updates squad.config.json
-│   │   ├── codex-switcher-bridge.js # Integration with chatgpt-codex-switcher & profiles
+│   │   ├── codex-manager.js         # Built-in native Codex multi-account manager & sync engine
 │   │   └── quota-monitor.js         # Multi-engine quota & auth inspector
 │   └── public/                      # Modern Dark-Mode Dashboard (HTML5 / CSS3 / Vanilla JS)
 │
@@ -52,10 +54,10 @@ craft-squad/
 - **Batch Reviewer (OpenAI Codex CLI)**: Dispatched once to audit the **entire aggregate diff in a single turn**.
 - **E2E Tester (Gemini Subagent)**: Executes live runtime & **Browser Subagent (`/browser`)** verification across the entire feature suite.
 
-### 3. Web Studio & Quota Monitor (`tool/`)
-- **Role Model Switcher**: Real-time web UI to swap engines (Claude, Codex, Gemini, CLI), models, and reasoning effort per role.
-- **Codex Multi-Account Rotator**: Seamless integration with `chatgpt-codex-switcher` to bypass the 5-hour rolling limits in 1 click.
-- **Live AI Quota Monitor**: Live health tracking for Claude (subscription tier, rate limit tiers), ChatGPT (token expiry countdown), and Gemini (language server status).
+### 3. Web Studio, Native Codex Switcher & Quota Monitor (`tool/`)
+- **Role Model Switcher**: Real-time web UI to swap engines (Claude, Codex, Gemini, CLI), models, and reasoning effort per role in `squad.config.json`.
+- **Built-in Native Codex Switcher**: 100% self-contained multi-account engine (`tool/lib/codex-manager.js`) and standalone CLI (`tool/bin/cx.js`), ported directly from `chatgpt-codex-switcher` with zero external runtime dependencies. Features Bi-directional Token Sync (Sync-on-Switch), fast account rotation, safe atomic file writes, and daemon control.
+- **Live AI Quota Monitor**: Live health tracking for Claude (subscription tier, rate limit tiers), ChatGPT (token expiry countdown and standby pool), and Gemini (language server status).
 
 ---
 

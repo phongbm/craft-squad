@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const http = require('http');
 const { execSync } = require('child_process');
-const { listProfiles } = require('./codex-switcher-bridge');
+const { codexManager } = require('./codex-manager');
 
 function checkClaudeStatus() {
   const claudeJsonPath = path.join(os.homedir(), '.claude.json');
@@ -52,7 +52,7 @@ function checkClaudeStatus() {
 }
 
 function checkChatGPTStatus() {
-  const profilesData = listProfiles();
+  const profilesData = codexManager.listProfiles();
   const activeAlias = profilesData.activeProfile;
   const activeProfile = profilesData.profiles.find((p) => p.alias === activeAlias) || profilesData.liveAuth;
 
@@ -61,12 +61,12 @@ function checkChatGPTStatus() {
     cliVersion = execSync('codex --version', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'], timeout: 3000 }).trim();
   } catch (_) {}
 
-  const isExpired = activeProfile ? activeProfile.is_expired : true;
+  const isExpired = activeProfile ? (activeProfile.isExpired || activeProfile.is_expired) : true;
   const email = activeProfile ? activeProfile.email : 'Unknown';
-  const timeLeft = activeProfile ? activeProfile.time_remaining_str : 'Unknown';
-  const expiresAt = activeProfile ? activeProfile.expires_at_str : 'Unknown';
+  const timeLeft = activeProfile ? (activeProfile.timeRemainingStr || activeProfile.time_remaining_str) : 'Unknown';
+  const expiresAt = activeProfile ? (activeProfile.expiresAtStr || activeProfile.expires_at_str) : 'Unknown';
   const totalProfiles = profilesData.profiles.length;
-  const validProfiles = profilesData.profiles.filter((p) => !p.is_expired).length;
+  const validProfiles = profilesData.profiles.filter((p) => !(p.isExpired || p.is_expired)).length;
 
   let status = 'healthy';
   let statusText = `Active (${timeLeft})`;

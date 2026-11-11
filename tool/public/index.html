@@ -50,28 +50,52 @@
         <div class="section-header">
           <div>
             <h2>🔄 ChatGPT Codex Multi-Account Switcher</h2>
-            <p class="section-desc">Powered by <code>chatgpt-codex-switcher</code>. Rotate accounts instantly when hitting 5-hour rolling limits.</p>
+            <p class="section-desc">Native multi-account & token sync engine. Rotate accounts instantly when hitting 5-hour rolling limits.</p>
           </div>
-          <button class="btn btn-primary" id="btn-rotate-next">
-            ⚡ Rotate to Next Valid Account
-          </button>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary" id="btn-sync-tokens" title="Sync refreshed tokens from auth.json back to active profile">
+              🔄 Sync Tokens
+            </button>
+            <button class="btn btn-secondary" id="btn-doctor" title="Check Codex binary & profile health">
+              🩺 Doctor
+            </button>
+            <button class="btn btn-primary" id="btn-rotate-next">
+              ⚡ Rotate Next Account
+            </button>
+          </div>
         </div>
 
         <div class="card accounts-card">
+          <!-- Toolbar to Save Current Auth -->
+          <div class="profile-toolbar">
+            <div class="save-profile-box">
+              <span class="toolbar-label">Save Current Login</span>
+              <div class="save-profile-inputs">
+                <input type="text" id="save-alias-input" placeholder="New profile alias (e.g. work-account)" class="text-input" style="width: 220px;" />
+                <button class="btn btn-secondary" id="btn-save-profile">💾 Save Profile</button>
+              </div>
+            </div>
+            <div class="profile-summary-box">
+              <span>Active: <strong id="active-profile-name">...</strong></span>
+              <span>Live Auth: <strong id="active-profile-token">...</strong></span>
+            </div>
+          </div>
+
           <div class="table-responsive">
             <table class="data-table" id="profiles-table">
               <thead>
                 <tr>
+                  <th style="width: 40px;">#</th>
                   <th>Profile</th>
                   <th>Email</th>
                   <th>Auth Mode</th>
                   <th>Token Expiry</th>
                   <th>Status</th>
-                  <th style="text-align: right;">Action</th>
+                  <th style="text-align: right; width: 140px;">Actions</th>
                 </tr>
               </thead>
               <tbody id="profiles-tbody">
-                <tr><td colspan="6" class="text-center">Loading Codex profiles...</td></tr>
+                <tr><td colspan="7" class="text-center">Loading Codex profiles...</td></tr>
               </tbody>
             </table>
           </div>
@@ -99,6 +123,23 @@
     <footer class="app-footer">
       <p>CraftSquad Framework v3.1.0 • Antigravity Plugin & Local Tool</p>
     </footer>
+  </div>
+
+  <!-- Doctor Modal -->
+  <div id="doctor-modal" class="modal-backdrop">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>🩺 Codex Diagnostics Doctor</h3>
+        <button class="modal-close" id="modal-close-btn">&times;</button>
+      </div>
+      <div class="doctor-grid" id="doctor-content">
+        <div class="doctor-row">Loading diagnostics...</div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button class="btn btn-secondary" id="btn-restart-daemon">🔄 Restart Daemon</button>
+        <button class="btn btn-primary" id="btn-doctor-ok">Close</button>
+      </div>
+    </div>
   </div>
 
   <div id="toast" class="toast"></div>

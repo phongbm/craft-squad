@@ -63,25 +63,34 @@ async function loadQuotas() {
 }
 
 // --------------------------------------------------------------------------
-// 2. ChatGPT Codex Account Rotator
+// 2. ChatGPT Codex Account Rotator & Native Switcher
 // --------------------------------------------------------------------------
 async function loadCodexProfiles() {
   const tbody = document.getElementById('profiles-tbody');
+  const activeName = document.getElementById('active-profile-name');
+  const activeToken = document.getElementById('active-profile-token');
+
   try {
     const res = await fetch(`${API_BASE}/api/codex/profiles`);
     const data = await res.json();
     const profiles = data.profiles || [];
+    const liveAuth = data.liveAuth || {};
+
+    if (activeName) activeName.textContent = data.activeProfile || 'None (Direct Auth)';
+    if (activeToken) activeToken.textContent = liveAuth.timeRemainingStr || liveAuth.time_remaining_str || 'N/A';
 
     if (!profiles.length) {
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="padding: 24px; color: var(--text-dim)">No profiles found in ~/.codex/profiles/</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding: 24px; color: var(--text-dim)">No profiles found in ~/.codex/profiles/. Save your current login above!</td></tr>`;
       return;
     }
 
-    tbody.innerHTML = profiles.map(p => {
+    tbody.innerHTML = profiles.map((p, idx) => {
       const isAct = p.isActive;
-      const statusBadge = p.is_expired
+      const isExp = p.isExpired || p.is_expired;
+      const timeLeft = p.timeRemainingStr || p.time_remaining_str || 'Unknown';
+      const statusBadge = isExp
         ? `<span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">EXPIRED</span>`
-        : `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">${p.time_remaining_str}</span>`;
+        : `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">${timeLeft}</span>`;
 
       const activeBadge = isAct
         ? `<span class="badge badge-info">ACTIVE</span>`
@@ -91,23 +100,33 @@ async function loadCodexProfiles() {
         ? `<button class="btn btn-sm btn-secondary" disabled>Current</button>`
         : `<button class="btn btn-sm btn-primary" onclick="handleSwitchProfile('${p.alias}')">Switch</button>`;
 
+      const deleteBtn = isAct
+        ? ''
+        : `<button class="btn btn-sm btn-icon" title="Remove Profile" onclick="handleRemoveProfile('${p.alias}')">🗑️</button>`;
+
       return `
         <tr class="${isAct ? 'active-row' : ''}">
+          <td style="color: var(--text-dim); font-family: var(--font-mono); font-size: 12px;">${p.index || (idx + 1)}</td>
           <td>
             <div class="profile-alias">
               ${isAct ? '⚡' : '👤'} ${p.alias}
             </div>
           </td>
           <td>${p.email}</td>
-          <td><code>${p.auth_mode || 'chatgpt'}</code></td>
+          <td><code>${p.auth_mode || p.authMode || 'chatgpt'}</code></td>
           <td>${statusBadge}</td>
           <td>${activeBadge}</td>
-          <td style="text-align: right;">${switchBtn}</td>
+          <td style="text-align: right;">
+            <div style="display: inline-flex; gap: 6px; align-items: center;">
+              ${switchBtn}
+              ${deleteBtn}
+            </div>
+          </td>
         </tr>
       `;
     }).join('');
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="6" class="text-danger">Failed to load profiles: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="text-danger">Failed to load profiles: ${err.message}</td></tr>`;
   }
 }
 
@@ -135,7 +154,7 @@ async function handleRotateNext() {
     const res = await fetch(`${API_BASE}/api/codex/rotate`, { method: 'POST' });
     const data = await res.json();
     if (data.success) {
-      showToast(`Rotated to profile: ${data.active_profile}`);
+      showToast(`Rotated to profile: ${data.activeProfile || data.active_profile}`);
       await Promise.all([loadCodexProfiles(), loadQuotas()]);
     } else {
       showToast(`Rotation failed: ${data.error}`, true);
@@ -143,6 +162,123 @@ async function handleRotateNext() {
   } catch (err) {
     showToast(`Error: ${err.message}`, true);
   }
+}
+
+async function handleSaveCurrentProfile() {
+  const input = document.getElementById('save-alias-input');
+  const alias = input.value.trim();
+  if (!alias) {
+    showToast('Please enter a profile alias (e.g. personal, work)', true);
+    input.focus();
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/codex/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ alias })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`Saved current auth as profile: [${data.alias}]`);
+      input.value = '';
+      await Promise.all([loadCodexProfiles(), loadQuotas()]);
+    } else {
+      showToast(`Save failed: ${data.error}`, true);
+    }
+  } catch (err) {
+    showToast(`Error: ${err.message}`, true);
+  }
+}
+
+async function handleRemoveProfile(alias) {
+  if (!confirm(`Are you sure you want to remove profile '${alias}'?`)) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/codex/remove`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ alias })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`Removed profile: ${alias}`);
+      await Promise.all([loadCodexProfiles(), loadQuotas()]);
+    } else {
+      showToast(`Remove failed: ${data.error}`, true);
+    }
+  } catch (err) {
+    showToast(`Error: ${err.message}`, true);
+  }
+}
+
+async function handleSyncTokens() {
+  try {
+    const res = await fetch(`${API_BASE}/api/codex/sync`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message || 'Synced tokens successfully');
+      await Promise.all([loadCodexProfiles(), loadQuotas()]);
+    } else {
+      showToast(`Sync failed: ${data.error}`, true);
+    }
+  } catch (err) {
+    showToast(`Error: ${err.message}`, true);
+  }
+}
+
+async function handleDoctor() {
+  const modal = document.getElementById('doctor-modal');
+  const content = document.getElementById('doctor-content');
+  modal.classList.add('show');
+  content.innerHTML = '<div class="doctor-row">Running diagnostics...</div>';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/codex/doctor`);
+    const data = await res.json();
+    const doc = data.doctor || {};
+
+    const items = [
+      { label: 'Codex Executable', value: doc.codexBinary },
+      { label: 'CLI Version', value: doc.codexVersion },
+      { label: 'Codex Home Dir', value: doc.codexHome },
+      { label: 'Auth File Exists', value: doc.authFileExists ? 'Yes (~/.codex/auth.json)' : 'Missing' },
+      { label: 'Active Profile', value: doc.activeProfile },
+      { label: 'Current Account', value: doc.currentEmail },
+      { label: 'Token Remaining', value: doc.tokenStatus },
+      { label: 'Profile Pool', value: `${doc.validProfiles}/${doc.totalProfiles} Valid Accounts` }
+    ];
+
+    content.innerHTML = items.map(item => `
+      <div class="doctor-row">
+        <span class="doctor-label">${item.label}</span>
+        <span class="doctor-value">${item.value || 'N/A'}</span>
+      </div>
+    `).join('');
+  } catch (err) {
+    content.innerHTML = `<div class="doctor-row text-danger">Doctor failed: ${err.message}</div>`;
+  }
+}
+
+async function handleRestartDaemon() {
+  try {
+    const res = await fetch(`${API_BASE}/api/codex/restart-daemon`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Codex background daemon restarted');
+      handleDoctor();
+    } else {
+      showToast(`Restart failed: ${data.error}`, true);
+    }
+  } catch (err) {
+    showToast(`Error: ${err.message}`, true);
+  }
+}
+
+function closeDoctorModal() {
+  const modal = document.getElementById('doctor-modal');
+  modal.classList.remove('show');
 }
 
 // --------------------------------------------------------------------------
@@ -294,6 +430,16 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btn-rotate-next').addEventListener('click', handleRotateNext);
+  document.getElementById('btn-save-profile').addEventListener('click', handleSaveCurrentProfile);
+  document.getElementById('btn-sync-tokens').addEventListener('click', handleSyncTokens);
+  document.getElementById('btn-doctor').addEventListener('click', handleDoctor);
+  document.getElementById('btn-restart-daemon').addEventListener('click', handleRestartDaemon);
+  document.getElementById('modal-close-btn').addEventListener('click', closeDoctorModal);
+  document.getElementById('btn-doctor-ok').addEventListener('click', closeDoctorModal);
+
+  document.getElementById('save-alias-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleSaveCurrentProfile();
+  });
 
   // Auto-refresh every 30s
   setInterval(() => {

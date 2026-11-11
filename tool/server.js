@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 
 const { getSquadConfig, updateRoleConfig, updateEngineDefault } = require('./lib/squad-manager');
-const { listProfiles, switchProfile, rotateNextProfile } = require('./lib/codex-switcher-bridge');
+const { codexManager, restartDaemon } = require('./lib/codex-manager');
 const { getUnifiedQuotaStatus } = require('./lib/quota-monitor');
 
 const PORT = Number(process.env.PORT) || 4200;
@@ -83,21 +83,52 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, data.success ? 200 : 400, data);
     }
 
-    // API: ChatGPT Codex Switcher
+    // API: ChatGPT Codex Native Switcher & Sync Engine
     if (pathname === '/api/codex/profiles' && req.method === 'GET') {
-      const data = listProfiles();
+      const data = codexManager.listProfiles();
       return sendJson(res, 200, data);
     }
 
     if (pathname === '/api/codex/switch' && req.method === 'POST') {
       const body = await parseJsonBody(req);
-      const data = switchProfile(body.alias);
+      const data = codexManager.switchProfile(body.alias);
       return sendJson(res, 200, data);
     }
 
     if (pathname === '/api/codex/rotate' && req.method === 'POST') {
-      const data = rotateNextProfile();
+      const data = codexManager.rotateNext();
       return sendJson(res, 200, data);
+    }
+
+    if (pathname === '/api/codex/save' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      const data = codexManager.saveCurrentAsProfile(body.alias);
+      return sendJson(res, 200, data);
+    }
+
+    if (pathname === '/api/codex/remove' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      const data = codexManager.removeProfile(body.alias);
+      return sendJson(res, 200, data);
+    }
+
+    if (pathname === '/api/codex/sync' && req.method === 'POST') {
+      const syncedAlias = codexManager.syncCurrentAuthToProfile();
+      return sendJson(res, 200, {
+        success: true,
+        syncedProfile: syncedAlias,
+        message: syncedAlias ? `Synced tokens to profile '${syncedAlias}'` : 'No active profile to sync'
+      });
+    }
+
+    if (pathname === '/api/codex/restart-daemon' && req.method === 'POST') {
+      const data = restartDaemon();
+      return sendJson(res, 200, data);
+    }
+
+    if (pathname === '/api/codex/doctor' && req.method === 'GET') {
+      const data = codexManager.doctor();
+      return sendJson(res, 200, { success: true, doctor: data });
     }
 
     // API: Multi-Engine Quotas & Health

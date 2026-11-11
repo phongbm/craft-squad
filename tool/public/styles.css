@@ -453,6 +453,151 @@ body {
   opacity: 1;
 }
 
+.btn-danger {
+  background: #dc2626;
+  color: white;
+}
+.btn-danger:hover {
+  background: #b91c1c;
+}
+
+.btn-icon {
+  padding: 5px 8px;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid transparent;
+}
+.btn-icon:hover {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+/* Profile Toolbar */
+.profile-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border-color);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.save-profile-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toolbar-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.save-profile-inputs {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.profile-summary-box {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.profile-summary-box strong {
+  color: var(--text-main);
+  font-family: var(--font-mono);
+}
+
+/* Modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.modal-backdrop.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-content {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  width: 90%;
+  max-width: 580px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-header h3 {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 20px;
+  cursor: pointer;
+}
+.modal-close:hover {
+  color: white;
+}
+
+.doctor-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.doctor-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-sm);
+}
+
+.doctor-label {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.doctor-value {
+  font-family: var(--font-mono);
+  color: var(--text-main);
+  word-break: break-all;
+  text-align: right;
+  max-width: 65%;
+}
+
 .app-footer {
   margin-top: auto;
   padding-top: 24px;
