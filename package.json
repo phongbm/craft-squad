@@ -20,7 +20,7 @@
     "codex:rotate": "node tool/bin/cx.js rotate",
     "codex:sync": "node tool/bin/cx.js sync",
     "codex:doctor": "node tool/bin/cx.js doctor",
-    "test": "npm --prefix plugin run test:dispatcher",
+    "test": "npm --prefix plugin run test:dispatcher && node tool/test/run.js",
     "plugin:test": "npm --prefix plugin run test:dispatcher",
     "plugin:status": "node plugin/bin/cli.js status",
     "plugin:install": "node plugin/bin/cli.js install",
@@ -29,7 +29,7 @@
     "plugin:uninstall": "node plugin/bin/cli.js uninstall",
     "plugin:config": "node plugin/bin/cli.js config",
     "plugin:dispatch": "node plugin/bin/cli.js dispatch",
-    "sync:upstream": "node plugin/scripts/sync-upstream.js"
+    "tool:test": "node tool/test/run.js"
   },
   "keywords": [
     "craft-squad",

@@ -1,148 +1,42 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CraftSquad Studio - Agent Team & Quota Dashboard</title>
-  <link rel="stylesheet" href="styles.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="cs-token" content="%%CS_TOKEN%%">
+  <title>CraftSquad Studio</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <div class="app-layout">
-    <!-- Navbar -->
-    <header class="app-header">
+  <header class="topbar">
+    <div class="topbar-inner">
       <div class="brand">
-        <div class="logo-icon">🚀</div>
-        <div>
-          <h1>CraftSquad Studio</h1>
-          <p class="subtitle">Agent Team Model Switcher & Quota Monitor</p>
-        </div>
+        <span class="logo" aria-hidden="true">C</span>
+        <span class="brand-name">CraftSquad Studio</span>
       </div>
-      <div class="header-actions">
-        <span class="status-badge live" id="live-indicator">
-          <span class="dot"></span> Online
-        </span>
-        <button class="btn btn-secondary" id="btn-refresh" title="Refresh Dashboard">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-          Refresh
+      <div class="tabs" role="tablist" aria-label="Sections">
+        <button class="tab" id="tab-accounts" role="tab" aria-selected="true" aria-controls="view-accounts" type="button">Accounts</button>
+        <button class="tab" id="tab-roles" role="tab" aria-selected="false" aria-controls="view-roles" type="button">Squad roles</button>
+      </div>
+      <div class="topbar-end">
+        <span class="conn conn-ok" id="conn">Connected</span>
+        <button class="btn btn-quiet btn-icon" id="refresh" type="button" aria-label="Refresh">
+          <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 4v5h-5"/></svg>
         </button>
       </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="main-content">
-      <!-- Section 1: Quota & Auth Overview -->
-      <section class="dashboard-section">
-        <div class="section-header">
-          <h2>⚡ Multi-Engine Quota & Auth Monitor</h2>
-          <span class="section-tag">Real-time Account State</span>
-        </div>
-        <div class="cards-grid" id="quota-cards">
-          <!-- Injected by JS -->
-          <div class="card loading-card">Loading AI Engine quotas...</div>
-        </div>
-      </section>
-
-      <!-- Section 2: ChatGPT Codex Account Rotator -->
-      <section class="dashboard-section">
-        <div class="section-header">
-          <div>
-            <h2>🔄 ChatGPT Codex Multi-Account Switcher</h2>
-            <p class="section-desc">Native multi-account & token sync engine. Rotate accounts instantly when hitting 5-hour rolling limits.</p>
-          </div>
-          <div style="display: flex; gap: 8px;">
-            <button class="btn btn-secondary" id="btn-sync-tokens" title="Sync refreshed tokens from auth.json back to active profile">
-              🔄 Sync Tokens
-            </button>
-            <button class="btn btn-secondary" id="btn-doctor" title="Check Codex binary & profile health">
-              🩺 Doctor
-            </button>
-            <button class="btn btn-primary" id="btn-rotate-next">
-              ⚡ Rotate Next Account
-            </button>
-          </div>
-        </div>
-
-        <div class="card accounts-card">
-          <!-- Toolbar to Save Current Auth -->
-          <div class="profile-toolbar">
-            <div class="save-profile-box">
-              <span class="toolbar-label">Save Current Login</span>
-              <div class="save-profile-inputs">
-                <input type="text" id="save-alias-input" placeholder="New profile alias (e.g. work-account)" class="text-input" style="width: 220px;" />
-                <button class="btn btn-secondary" id="btn-save-profile">💾 Save Profile</button>
-              </div>
-            </div>
-            <div class="profile-summary-box">
-              <span>Active: <strong id="active-profile-name">...</strong></span>
-              <span>Live Auth: <strong id="active-profile-token">...</strong></span>
-            </div>
-          </div>
-
-          <div class="table-responsive">
-            <table class="data-table" id="profiles-table">
-              <thead>
-                <tr>
-                  <th style="width: 40px;">#</th>
-                  <th>Profile</th>
-                  <th>Email</th>
-                  <th>Auth Mode</th>
-                  <th>Token Expiry</th>
-                  <th>Status</th>
-                  <th style="text-align: right; width: 140px;">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="profiles-tbody">
-                <tr><td colspan="7" class="text-center">Loading Codex profiles...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section 3: Role & Model Switcher -->
-      <section class="dashboard-section">
-        <div class="section-header">
-          <div>
-            <h2>⚙️ Role & Model Matrix</h2>
-            <p class="section-desc">Configure engines, models, and reasoning effort per role in <code>squad.config.json</code>.</p>
-          </div>
-          <span class="badge badge-info" id="config-path-badge">squad.config.json</span>
-        </div>
-
-        <div class="roles-grid" id="roles-grid">
-          <!-- Injected by JS -->
-          <div class="card loading-card">Loading roles configuration...</div>
-        </div>
-      </section>
-    </main>
-
-    <!-- Footer -->
-    <footer class="app-footer">
-      <p>CraftSquad Framework v3.1.0 • Antigravity Plugin & Local Tool</p>
-    </footer>
-  </div>
-
-  <!-- Doctor Modal -->
-  <div id="doctor-modal" class="modal-backdrop">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>🩺 Codex Diagnostics Doctor</h3>
-        <button class="modal-close" id="modal-close-btn">&times;</button>
-      </div>
-      <div class="doctor-grid" id="doctor-content">
-        <div class="doctor-row">Loading diagnostics...</div>
-      </div>
-      <div style="display: flex; justify-content: flex-end; gap: 8px;">
-        <button class="btn btn-secondary" id="btn-restart-daemon">🔄 Restart Daemon</button>
-        <button class="btn btn-primary" id="btn-doctor-ok">Close</button>
-      </div>
     </div>
-  </div>
+  </header>
 
-  <div id="toast" class="toast"></div>
-  <script src="app.js"></script>
+  <main class="page">
+    <div id="view-accounts" role="tabpanel" aria-labelledby="tab-accounts"></div>
+    <div id="view-roles" role="tabpanel" aria-labelledby="tab-roles" hidden></div>
+  </main>
+
+  <div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <noscript><p class="noscript">CraftSquad Studio needs JavaScript.</p></noscript>
+  <script type="module" src="/js/main.js"></script>
 </body>
 </html>

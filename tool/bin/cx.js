@@ -1,180 +1,144 @@
 #!/usr/bin/env node
 
 /**
- * CraftSquad Codex CLI (`cx`)
- * Standalone multi-account switcher and token manager for OpenAI Codex.
+ * CraftSquad account switcher (`cx`)
+ * Codex accounts by default (`cx codex ...` is the same), Claude Code accounts under `cx claude ...`.
+ * Accounts are identified by their email: no aliases. Select with an email, an email prefix, or the list number.
  */
 
-const path = require('path');
-const { codexManager } = require('../lib/codex-manager');
-
-const args = process.argv.slice(2);
-const command = args[0] || 'list';
+const { CodexService } = require('../lib/codex/store');
+const { runClaudeCli, printClaudeHelp } = require('./cx-claude');
+const { printTable, awaitLogin } = require('./cx-util');
 
 function printHelp() {
   console.log(`
-============================================================
- CraftSquad Codex Account Switcher (cx)
-============================================================
+CraftSquad Account Switcher (cx)
+
 Usage:
-  cx [command] [options]
-  node tool/bin/cx.js [command] [options]
+  cx [command]                  OpenAI Codex accounts (default provider)
+  cx codex [command]            Same as above, explicit
+  cx claude [command]           Claude Code accounts (see below)
 
-Commands:
-  list, ls                 List all saved profiles and token expiry
-  current, whoami          Show current active profile and claims
-  switch <alias|#>         Switch active Codex account (with 2-way sync)
-  rotate, next             Rotate to next valid account
-  save <alias>             Save current login as a named profile
-  remove, rm <alias|#>     Delete a profile from storage
-  sync                     Sync current auth.json back to profile
-  restart                  Restart Codex background daemon
-  doctor                   Run environment health check
-  help                     Show this help message
+Codex commands:
+  list, ls                      List saved accounts; "in use" matches the live ~/.codex login
+  current, whoami               Show the live login and whether it is saved
+  add                           Sign in a new account in your browser (live login is not touched)
+  save                          Save the live login (new account, or refresh an existing one)
+  switch <email|#> [--no-daemon]  Make an account the live login (saves and backs up the old one first)
+  rotate [--no-daemon]          Switch to the next ready account
+  remove, rm <email|#>          Remove a saved account
+  sync                          Copy refreshed tokens from the live login back to its saved account
+  restart                       Restart the Codex background daemon
+  doctor                        Check the Codex CLI and accounts
 
-Options:
-  --no-daemon              Skip restarting the app-server daemon
-  -r, --resume             Resume session after switching (codex resume --last)
+Select accounts by email, an email prefix, or the list number. "cx <email|#>" is a shortcut for switch.
 `);
+  printClaudeHelp();
 }
 
-async function main() {
+const SELECTOR = /^(\d+|[^\s@]+@[^\s@]*)$/;
+
+async function runCodexCli(args, service = new CodexService()) {
+  const command = args[0] || 'list';
+  const restartDaemon = !args.includes('--no-daemon');
+  const report = (r) => {
+    console.log(`Switched to ${r.email}`);
+    if (r.autoSaved) console.log(`Saved your previous login (${r.autoSaved}) first.`);
+    if (r.alreadyActive) console.log('That account was already in use.');
+    if (r.daemon) console.log(`Daemon: ${r.daemon.message}`);
+    if (r.openProcesses) console.log(`${r.openProcesses} Codex process(es) are running. Restart open Codex windows to pick up the new account.`);
+  };
+
   try {
     switch (command) {
       case 'list':
       case 'ls': {
-        const data = codexManager.listProfiles();
-        console.log(`\n============================================================`);
-        console.log(` Saved Codex Profiles (${data.totalCount})`);
-        console.log(` Active Profile: ${data.activeProfile || '(none)'}`);
-        console.log(`============================================================`);
-        console.log(`#    Alias               Email                     Expires In       Status`);
-        console.log(`----------------------------------------------------------------------------`);
-        data.profiles.forEach((p) => {
-          const activeMark = p.isActive ? '[ACTIVE]' : '';
-          const status = p.isExpired ? 'EXPIRED' : p.timeRemainingStr;
-          console.log(`[${p.index}]  ${p.alias.padEnd(18)}  ${p.email.padEnd(24)}  ${status.padEnd(15)}  ${activeMark}`);
-        });
-        console.log(`----------------------------------------------------------------------------\n`);
-        break;
+        const data = service.list();
+        if (!data.accounts.length) console.log('No saved accounts. Run "cx add" or "cx save".');
+        else {
+          printTable(data.accounts, [
+            { title: '#', get: (a) => a.index },
+            { title: 'Account', get: (a) => a.email },
+            { title: 'Plan', get: (a) => a.plan || '-' },
+            { title: 'Status', get: (a) => (a.status === 'ready' ? 'ready' : 'needs sign-in') },
+            { title: '', get: (a) => (a.isActive ? 'IN USE' : '') }
+          ]);
+        }
+        if (!data.liveSaved) console.log(`\nThe live login (${data.live.email}) is not saved. Run "cx save".`);
+        data.notes.forEach((n) => console.log(`Note: ${n}`));
+        return 0;
       }
-
       case 'current':
       case 'whoami': {
-        const live = codexManager.listProfiles().liveAuth;
-        const state = codexManager.getState();
-        console.log(`\n--- Active Codex Account ---`);
-        console.log(`Profile Alias: ${state.active_profile || 'unmanaged'}`);
-        console.log(`Email:         ${live.email}`);
-        console.log(`Name:          ${live.name}`);
-        console.log(`Auth Mode:     ${live.authMode}`);
-        console.log(`Expires At:    ${live.expiresAtStr}`);
-        console.log(`Time Left:     ${live.timeRemainingStr}`);
-        console.log(`Expired:       ${live.isExpired ? 'YES' : 'NO'}\n`);
-        break;
+        const { live, liveSaved } = service.list();
+        console.log(live ? `${live.email}${live.plan ? ` (${live.plan})` : ''}${liveSaved ? '' : ' - not saved'}` : 'No Codex login found.');
+        return 0;
       }
-
-      case 'switch': {
-        const target = args[1];
-        if (!target) {
-          console.error('Error: Profile alias or number required: cx switch <alias|#>');
-          process.exit(1);
-        }
-        const noDaemon = args.includes('--no-daemon');
-        const res = codexManager.switchProfile(target, { restartDaemon: !noDaemon });
-        console.log(`\n✅ Switched to account: [${res.activeProfile}] (${res.email})`);
-        console.log(`   Token validity: ${res.timeLeft}`);
-        if (res.syncedProfile) console.log(`   Synced previous tokens to: [${res.syncedProfile}]`);
-        if (res.daemon) console.log(`   Daemon status: ${res.daemon.message}`);
-        console.log();
-        break;
+      case 'add': {
+        await awaitLogin(service, await service.add(), 'Codex');
+        return 0;
       }
-
-      case 'rotate':
-      case 'next': {
-        const noDaemon = args.includes('--no-daemon');
-        const res = codexManager.rotateNext({ restartDaemon: !noDaemon });
-        console.log(`\n🔄 Rotated to account: [${res.activeProfile}] (${res.email})`);
-        console.log(`   Token validity: ${res.timeLeft}\n`);
-        break;
-      }
-
       case 'save': {
-        const alias = args[1];
-        if (!alias) {
-          console.error('Error: Profile alias required: cx save <alias>');
-          process.exit(1);
-        }
-        const res = codexManager.saveCurrentAsProfile(alias);
-        console.log(`\n✅ Saved current credentials as profile: [${res.alias}] (${res.email})\n`);
-        break;
+        const r = service.saveLive();
+        console.log(r.created ? `Saved ${r.email}` : `Updated ${r.email}`);
+        return 0;
       }
-
+      case 'switch': {
+        if (!args[1]) throw new Error('Choose an account: cx switch <email|#>');
+        report(await service.switchTo(args[1], { restartDaemon }));
+        return 0;
+      }
+      case 'rotate':
+      case 'next':
+        report(await service.rotate({ restartDaemon }));
+        return 0;
       case 'remove':
       case 'rm': {
-        const alias = args[1];
-        if (!alias) {
-          console.error('Error: Profile alias required: cx remove <alias|#>');
-          process.exit(1);
-        }
-        const res = codexManager.removeProfile(alias);
-        console.log(`\n🗑️ Removed profile: [${res.removed}]\n`);
-        break;
+        if (!args[1]) throw new Error('Choose an account: cx remove <email|#>');
+        console.log(`Removed ${service.remove(args[1]).email}`);
+        return 0;
       }
-
       case 'sync': {
-        const synced = codexManager.syncCurrentAuthToProfile();
-        if (synced) {
-          console.log(`\n✅ Synced current tokens back to profile: [${synced}]\n`);
-        } else {
-          console.log(`\nℹ️ No matching profile to sync.\n`);
-        }
-        break;
+        const r = service.sync();
+        console.log(r.synced ? `Synced tokens to ${r.email}` : 'Nothing to sync.');
+        return 0;
       }
-
       case 'restart': {
-        const { restartDaemon } = require('../lib/codex-manager');
-        const r = restartDaemon();
-        console.log(`\nDaemon status: ${r.message}\n`);
-        break;
+        const r = await require('../lib/codex/runtime').restartDaemon();
+        console.log(r.message);
+        return r.success ? 0 : 1;
       }
-
       case 'doctor': {
-        const doc = codexManager.doctor();
-        console.log(`\n============================================================`);
-        console.log(` Codex Health Doctor`);
-        console.log(`============================================================`);
-        console.log(`Executable:     ${doc.codexBinary}`);
-        console.log(`Version:        ${doc.codexVersion}`);
-        console.log(`Codex Home:     ${doc.codexHome}`);
-        console.log(`Active Profile: ${doc.activeProfile}`);
-        console.log(`Account Email:  ${doc.currentEmail}`);
-        console.log(`Token Status:   ${doc.tokenStatus}`);
-        console.log(`Saved Profiles: ${doc.validProfiles}/${doc.totalProfiles} Valid\n`);
-        break;
+        const d = await service.doctor();
+        console.log(`CLI:          ${d.binary}\nVersion:      ${d.version}\nCodex home:   ${d.codexHome}\nAccounts:     ${d.accounts}\nLive login:   ${d.liveAccount}${d.liveSaved ? '' : ' (not saved)'}\nFolder:       ${d.accountsRoot}\nRunning:      ${d.openProcesses} process(es)`);
+        return 0;
       }
-
       case 'help':
       case '--help':
       case '-h':
-      default:
-        // Check if command is an alias or index directly: `cx acc2` or `cx 1`
-        if (command && command !== 'help' && !command.startsWith('-')) {
-          try {
-            const noDaemon = args.includes('--no-daemon');
-            const res = codexManager.switchProfile(command, { restartDaemon: !noDaemon });
-            console.log(`\n✅ Switched to account: [${res.activeProfile}] (${res.email})`);
-            console.log(`   Token validity: ${res.timeLeft}\n`);
-            return;
-          } catch (_) {}
-        }
         printHelp();
-        break;
+        return 0;
+      default:
+        if (SELECTOR.test(command)) {
+          report(await service.switchTo(command, { restartDaemon }));
+          return 0;
+        }
+        console.error(`Unknown command "${command}".`);
+        printHelp();
+        return 1;
     }
   } catch (err) {
-    console.error(`\n❌ Error: ${err.message}\n`);
-    process.exit(1);
+    console.error(`Error: ${err.message}`);
+    return 1;
   }
 }
 
-main();
+async function main() {
+  let args = process.argv.slice(2);
+  if (args[0] === 'codex') args = args.slice(1);
+  process.exitCode = args[0] === 'claude' ? await runClaudeCli(args.slice(1)) : await runCodexCli(args);
+}
+
+if (require.main === module) main();
+
+module.exports = { runCodexCli, main };

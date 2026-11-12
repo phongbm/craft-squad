@@ -1,16 +1,17 @@
 {
   "name": "craft-squad-tool",
   "version": "1.0.0",
-  "description": "CraftSquad Local Web Tool: Role Model Switcher, Codex Profile Rotator, and AI Quota Monitor",
+  "description": "CraftSquad Studio: local web UI and CLI for Codex and Claude Code accounts and squad role settings",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "test": "node test/run.js"
   },
   "keywords": [
     "craft-squad",
     "codex-switcher",
-    "quota-monitor",
+    "claude-code",
     "model-switcher"
   ],
   "author": "CraftXTech Team",

@@ -1,24 +1,24 @@
-# EPIC-[ID]-[NAME]: [Tên Epic]
+# EPIC-[ID]-[NAME]: [Epic Title]
 
-## 1. Objective (Mục tiêu cốt lõi)
-<!-- Mô tả mục tiêu kinh doanh và kỹ thuật cụ thể mà Epic này giải quyết trong phase này -->
+## 1. Objective
+<!-- Describe the business and technical objective this Epic solves in this phase -->
 
-## 2. Scope Boundaries (Ranh giới phạm vi)
-### IN SCOPE (Bắt buộc hoàn thành)
-- [ ] Chức năng 1
-- [ ] Chức năng 2
+## 2. Scope Boundaries
+### IN SCOPE (Must complete)
+- [ ] Feature / deliverable 1
+- [ ] Feature / deliverable 2
 
-### OUT OF SCOPE (Tuyệt đối không làm trong Epic này)
-- [ ] Tính năng nâng cao hoãn lại phase sau...
-- [ ] Các tác vụ không phục vụ trực tiếp mục tiêu cốt lõi...
+### OUT OF SCOPE (Explicitly excluded from this Epic)
+- [ ] Deferred capability for a later phase
+- [ ] Unrelated work not serving the core objective
 
-## 3. Blast Radius (Bán kính ảnh hưởng)
-<!-- Danh sách các thư mục, module được phép tác động. Cấm sửa file ngoài danh sách này -->
+## 3. Blast Radius
+<!-- Allowed directories and modules. No file edits outside this list -->
 - `backend/src/modules/<module_name>/`
 - `web/src/views/<view_name>/`
 - `web/src/components/<module_name>/`
 
-## 4. Story Breakdown (Danh sách Story tuần tự)
-- [ ] STORY-01-[NAME]: [Mô tả vắn tắt]
-- [ ] STORY-02-[NAME]: [Mô tả vắn tắt]
-- [ ] STORY-03-[NAME]: [Mô tả vắn tắt]
+## 4. Story Breakdown
+- [ ] STORY-01-[NAME]: [Brief description]
+- [ ] STORY-02-[NAME]: [Brief description]
+- [ ] STORY-03-[NAME]: [Brief description]

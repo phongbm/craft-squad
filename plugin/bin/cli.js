@@ -44,7 +44,7 @@ function copyRecursive(src, dest) {
 
 function copyCleanPlugin(src, dest) {
   const allowedDirs = ['agents', 'assets', 'charters', 'mcp-server', 'rules', 'templates', 'bin'];
-  const allowedFiles = ['plugin.json', 'package.json', 'squad.config.json', 'squad.schema.json', 'mcp_config.json', 'README.md', 'UPSTREAM_EVIDENCE.md'];
+  const allowedFiles = ['plugin.json', 'package.json', 'squad.config.json', 'squad.schema.json', 'mcp_config.json'];
 
   fs.mkdirSync(dest, { recursive: true });
   for (const f of allowedFiles) {
@@ -345,7 +345,7 @@ function pullLatestAndRedeploy() {
   if (beforeSha === afterSha) return false;
 
   console.log(`   Updated ${beforeSha.slice(0, 7)} -> ${afterSha.slice(0, 7)}; deploying with the new CLI...`);
-  const reexecArgs = ['upgrade', '--no-pull', ...(args.includes('--sync-upstream') ? ['--sync-upstream'] : [])];
+  const reexecArgs = ['upgrade', '--no-pull'];
   const child = spawnSync(process.execPath, [path.join(packageRootDir, 'bin', 'cli.js'), ...reexecArgs], { stdio: 'inherit' });
   if (child.status !== 0) {
     if (child.error) console.error(`❌ Failed to launch upgraded CLI: ${child.error.message}`);
@@ -363,14 +363,6 @@ function upgradePlugin() {
 🎉 Upgrade complete!
 `);
     return;
-  }
-  if (args.includes('--sync-upstream')) {
-    try {
-      console.log('Refreshing upstream BMAD and Spec-Kit templates...');
-      require('../scripts/sync-upstream.js');
-    } catch (e) {
-      console.log(`ℹ️ Upstream sync note: ${e.message}`);
-    }
   }
   installGlobalPlugin();
   console.log(`
@@ -427,12 +419,12 @@ function checkEngineStatus() {
     console.log('  ⚠️ Claude Code CLI: Not found. Run `npm i -g @anthropic-ai/claude-code` and `claude login`.');
   }
 
-  // 3. Upstream Evidence
-  const evidenceFile = path.join(packageRootDir, 'UPSTREAM_EVIDENCE.md');
-  if (fs.existsSync(evidenceFile)) {
-    console.log('  ✅ Upstream Evidence: Verified (github/spec-kit + bmad-code-org/BMAD-METHOD)');
+  // 3. Templates
+  const hasTemplates = fs.existsSync(path.join(packageRootDir, 'templates', 'craftsquad', 'epic-template.md'));
+  if (hasTemplates) {
+    console.log('  ✅ Templates: Ready (templates/craftsquad)');
   } else {
-    console.log('  ⚠️ Upstream Evidence: Missing. Run `npm run sync:upstream`.');
+    console.log('  ⚠️ Templates: Missing templates/craftsquad. Reinstall the plugin.');
   }
 
   // 4. Check Global Antigravity Plugin directory
@@ -454,7 +446,7 @@ Usage:
 
 Plugin Commands:
   install                  Deploy plugin to ~/.gemini/config/plugins/craft-squad
-  update | upgrade         Pull latest commits (if git clone) and redeploy (--no-pull, --sync-upstream)
+  update | upgrade         Pull latest commits (if git clone) and redeploy (--no-pull)
   uninstall                Stop CraftSquad MCP server, remove plugin dir, clean config.json
   status | doctor          Check Codex/Claude CLIs, plugin install state, and role mapping
   config                   Show active role-to-engine configuration
@@ -464,7 +456,7 @@ Plugin Commands:
 
 Tool Commands (when run from repo or npm install):
   studio | tool            Launch local Web Studio at http://localhost:4200
-  cx [args...]             Run Codex multi-account switcher CLI (list, save, switch, rotate, sync, doctor)
+  cx [args...]             Run account switcher: Codex (list, save, switch, rotate, sync, doctor) or "cx claude ..."
 `);
 }
 
@@ -529,13 +521,6 @@ function main() {
       } else {
         printConfig();
       }
-      break;
-    }
-
-    case 'sync':
-    case 'sync:upstream': {
-      console.log('🔄 Launching Upstream Synchronizer...');
-      require('../scripts/sync-upstream.js');
       break;
     }
 
@@ -686,7 +671,7 @@ function main() {
           console.log('Model:', res.model);
           console.log('Reasoning Effort:', res.reasoningEffort);
           console.log('Success:', res.success);
-          if (res.sources) console.log('Upstream sources used:\n  - ' + res.sources.join('\n  - '));
+          if (res.sources) console.log('Sources used:\n  - ' + res.sources.join('\n  - '));
           if (res.missingSources && res.missingSources.length) console.log('MISSING sources:\n  - ' + res.missingSources.join('\n  - '));
           console.log('Output:\n' + (dryRun ? (res.compiledPrompt || res.command || '') : res.output) + '\n');
           if (!res.success) {

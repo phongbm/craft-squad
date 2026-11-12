@@ -21,6 +21,8 @@
 const fs = require('fs');
 const path = require('path');
 const { spawn, execSync } = require('child_process');
+const { spawnSafe } = require('../shared/safe-spawn');
+const { selectedClaudeAccount } = require('./claude-account');
 const { createLogger } = require('../shared/logger');
 const { compileRolePrompt, listArtifactTypes, ROLE_SOURCES } = require('./prompt-compiler');
 
@@ -91,10 +93,7 @@ function stripEffortTags(prompt) {
 /* ------------------------------ process helpers ------------------------------ */
 
 function spawnCli(binName, args, options = {}) {
-  if (process.platform === 'win32') {
-    return spawn(process.env.ComSpec || 'cmd.exe', ['/c', binName, ...args], { ...options, windowsHide: true });
-  }
-  return spawn(binName, args, options);
+  return spawnSafe(binName, args, options);
 }
 
 function killProcessTree(child) {
@@ -128,7 +127,7 @@ function appendDispatchLog(cwd, fileNames, text) {
 }
 
 /** Runs a CLI engine, feeding the prompt through stdin (no argv length / quoting limits). */
-function runEngineProcess({ bin, args, input, cwd, timeoutSeconds, label, metadata }) {
+function runEngineProcess({ bin, args, input, cwd, timeoutSeconds, label, metadata, env }) {
   const logFiles = ['latest-dispatch.log', `dispatch-${(metadata && (metadata.role || metadata.engine)) || 'engine'}.log`];
   const logLine = (text) => appendDispatchLog(cwd, logFiles, text);
   logLine(`\n===== [${new Date().toISOString()}] ${label} dispatch start (model=${(metadata && metadata.model) || '-'}, effort=${(metadata && metadata.effort) || '-'}) =====\n`);
@@ -146,7 +145,7 @@ function runEngineProcess({ bin, args, input, cwd, timeoutSeconds, label, metada
 
     let child;
     try {
-      child = spawnCli(bin, args, { cwd, stdio: ['pipe', 'pipe', 'pipe'], detached: process.platform !== 'win32' });
+      child = spawnCli(bin, args, { cwd, env, stdio: ['pipe', 'pipe', 'pipe'], detached: process.platform !== 'win32' });
     } catch (e) {
       const msg = `Failed to start ${label}: ${e.message}`;
       logLine(`${msg}\n`);
@@ -212,9 +211,11 @@ function executeClaude({ prompt, role, model, effort, cwd, timeoutSeconds }) {
   const args = ['-p', '--dangerously-skip-permissions'];
   if (model) args.push('--model', model);
   if (effort) args.push('--effort', effort);
+  const account = selectedClaudeAccount();
   return runEngineProcess({
     bin: 'claude', args, input: prompt, cwd, timeoutSeconds, label: 'Claude Code CLI',
-    metadata: { engine: 'claude', role, model, effort, cwd }
+    env: account ? { ...process.env, CLAUDE_CONFIG_DIR: account.dir } : undefined,
+    metadata: { engine: 'claude', role, model, effort, cwd, claudeAccount: account ? account.id : 'system' }
   });
 }
 
@@ -367,7 +368,9 @@ async function dispatchRole(roleName, prompt, options = {}) {
   const compileInfo = { artifactType: compiled.artifactType, sources: compiled.sources, missingSources: compiled.missing };
 
   if (options.dryRun) {
-    return { ...base, success: true, dryRun: true, ...compileInfo, compiledPrompt: compiled.prompt, output: '' };
+    const dry = { ...base, success: true, dryRun: true, ...compileInfo, compiledPrompt: compiled.prompt, output: '' };
+    if (engine === 'claude') { const account = selectedClaudeAccount(); dry.claudeAccount = account ? account.id : 'system'; dry.claudeConfigDir = account ? account.dir : null; }
+    return dry;
   }
 
   let result;
@@ -426,11 +429,11 @@ function getDispatcherTools() {
           promptFile: { type: 'string', description: 'Optional path to a file containing the task prompt.' },
           storyPath: { type: 'string', description: 'Optional path to a Story markdown file to execute.' },
           epicPath: { type: 'string', description: 'Optional path to an Epic markdown file to execute all its stories in batch.' },
-          artifactType: { type: 'string', description: `Optional upstream template to apply. ${artifacts}` },
+          artifactType: { type: 'string', description: `Optional output template to apply. ${artifacts}` },
           reasoningEffort: { type: 'string', enum: VALID_EFFORTS, description: 'Optional effort override.' },
           modelOverride: { type: 'string', description: 'Optional one-off model override.' },
           workingDirectory: { type: 'string', description: 'Project root directory.' },
-          timeoutSeconds: { type: 'integer', description: 'Execution timeout (default from config, else 600).' },
+          timeoutSeconds: { type: 'integer', description: 'Execution timeout (default from config, else 900).' },
           dryRun: { type: 'boolean', description: 'Resolve routing and compile the prompt without running any engine.' }
         },
         required: ['role']

@@ -8,7 +8,13 @@ const path = require('path');
 const assert = require('assert');
 const { spawnSync } = require('child_process');
 const { resolveConfig, detectReasoningEffort, dispatchRole, setRole, executeCliCommand } = require('../mcp-server/modules/dispatcher');
-const { compileRolePrompt, parseAgentToml, ROLE_SOURCES } = require('../mcp-server/modules/prompt-compiler');
+const { compileRolePrompt, ROLE_SOURCES } = require('../mcp-server/modules/prompt-compiler');
+
+// Keep every cx child process away from the real ~/.codex and ~/.craft-squad.
+const cxSandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-cxsandbox-'));
+process.env.CODEX_HOME = path.join(cxSandbox, 'codex');
+process.env.CX_CODEX_HOME = path.join(cxSandbox, 'codex-profiles');
+process.env.CX_CLAUDE_HOME = path.join(cxSandbox, 'claude-profiles');
 
 const root = path.resolve(__dirname, '..');
 let passed = 0;
@@ -68,16 +74,15 @@ const test = async (name, fn) => {
     assert.strictEqual(detectReasoningEffort('x', 'high', d, de, ge), 'high');
   });
 
-  await test('TOML parser reads upstream BMAD persona (name, role, principles)', () => {
-    const t = fs.readFileSync(path.join(root, 'templates/bmad/skills/bmad-agent-dev/customize.toml'), 'utf8');
-    const a = parseAgentToml(t);
-    assert.strictEqual(a.name, 'Amelia');
-    assert(a.role && a.identity);
-    assert(Array.isArray(a.principles) && a.principles.length >= 3);
-    assert(a.principles.some((p) => /passing tests/.test(p)));
+  await test('every charter carries a Persona section with identity, style and principles', () => {
+    for (const role of Object.keys(ROLE_SOURCES)) {
+      const c = fs.readFileSync(path.join(root, 'charters', `${role}.md`), 'utf8');
+      assert(/## Persona/.test(c), `${role} charter lacks a Persona section`);
+      assert(c.includes('**Identity:**') && c.includes('**Style:**') && c.includes('**Principles:**'), `${role} persona incomplete`);
+    }
   });
 
-  await test('compiler reads every declared upstream source from disk (none missing)', () => {
+  await test('compiler reads every declared source from disk (none missing)', () => {
     for (const role of Object.keys(ROLE_SOURCES)) {
       const types = Object.keys(ROLE_SOURCES[role].artifacts);
       for (const t of types.length ? types : [undefined]) {
@@ -88,15 +93,17 @@ const test = async (name, fn) => {
     }
   });
 
-  await test('compiled prompts embed real upstream content', () => {
-    const arch = compileRolePrompt('architect', 'T', { artifactType: 'spine' });
-    assert(/Architecture Spine/.test(arch.prompt) && /Winston/.test(arch.prompt));
+  await test('compiled prompts embed charters, lenses and templates', () => {
+    const arch = compileRolePrompt('architect', 'T', { artifactType: 'plan' });
+    assert(/Module Boundaries/.test(arch.prompt) && /## Persona/.test(arch.prompt));
     const spec = compileRolePrompt('spec_owner', 'T', { artifactType: 'spec' });
-    assert(/Feature Specification/.test(spec.prompt) && /Sofia/.test(spec.prompt));
+    assert(/Functional Requirements/.test(spec.prompt) && /NEEDS CLARIFICATION/.test(spec.prompt));
     const rev = compileRolePrompt('code_reviewer', 'T');
-    assert(/Edge Case Hunter/.test(rev.prompt) && /Verification Gap/.test(rev.prompt));
-    const tasks = compileRolePrompt('scrum_master', 'T');
-    assert(/Tasks:/.test(tasks.prompt));
+    assert(/Edge Case Hunter/.test(rev.prompt) && /Verification Gap/.test(rev.prompt) && /Adversarial Review/.test(rev.prompt));
+    const tasks = compileRolePrompt('scrum_master', 'T', { artifactType: 'tasks' });
+    assert(/Phase 1/.test(tasks.prompt) && tasks.prompt.includes('[P]'));
+    const bug = compileRolePrompt('scrum_master', 'T', { artifactType: 'bug' });
+    assert(/Reproduction/.test(bug.prompt));
     const epic = compileRolePrompt('spec_owner', 'T', { artifactType: 'epic' });
     assert(/Scope Boundaries/.test(epic.prompt));
     const story = compileRolePrompt('scrum_master', 'T', { artifactType: 'story' });
@@ -152,6 +159,20 @@ const test = async (name, fn) => {
       const content = fs.readFileSync(p, 'utf8');
       assert(/subagent:\s*true/i.test(content), `subagent flag missing in ${s}`);
     });
+  });
+
+  await test('plugin ships no third-party BMAD/Spec-Kit templates or sync tooling', () => {
+    assert(!fs.existsSync(path.join(root, 'templates', 'bmad')));
+    assert(!fs.existsSync(path.join(root, 'templates', 'speckit')));
+    assert(!fs.existsSync(path.join(root, 'scripts', 'sync-upstream.js')));
+    const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) return e.name === 'node_modules' || e.name === 'scripts' ? [] : walk(p);
+      return [p];
+    });
+    for (const f of walk(root).filter((p) => /\.(md|json|js|toml)$/.test(p))) {
+      assert(!/bmad|spec-?kit/i.test(fs.readFileSync(f, 'utf8')), `stale upstream reference in ${path.relative(root, f)}`);
+    }
   });
 
   await test('unknown artifactType is rejected', () => {
@@ -445,7 +466,7 @@ const test = async (name, fn) => {
     const cfgDir = path.join(home, '.gemini', 'config');
     const cfgPath = path.join(cfgDir, 'config.json');
     const target = path.join(cfgDir, 'plugins', 'craft-squad');
-    const tracked = ['templates', 'UPSTREAM_EVIDENCE.md'].map((p) => path.join(root, p));
+    const tracked = ['templates'].map((p) => path.join(root, p));
     const hashTree = (p, h) => {
       const st = fs.statSync(p);
       if (st.isDirectory()) {
@@ -476,7 +497,8 @@ const test = async (name, fn) => {
       run('install');
       assert(!fs.existsSync(path.join(target, 'stale.txt')), 'stale file should be removed');
       assert(fs.existsSync(path.join(target, 'plugin.json')));
-      assert(fs.existsSync(path.join(target, 'README.md')));
+      assert(!fs.existsSync(path.join(target, 'README.md')), 'plugin README.md should not exist or be deployed');
+      assert(!fs.existsSync(path.join(target, 'AGENTS.md')), 'repo dev AGENTS.md must not be deployed into plugin root');
       assert(fs.existsSync(path.join(target, 'assets', 'logo.svg')));
       assert(fs.existsSync(path.join(target, 'rules', 'AGENTS.md')));
       assert.strictEqual(readCfg().plugins['craft-squad'].enabled, true);
@@ -488,7 +510,7 @@ const test = async (name, fn) => {
       run('upgrade', '--no-pull');
       assert(!fs.existsSync(path.join(target, 'stale.txt')));
       assert(fs.existsSync(path.join(target, 'plugin.json')));
-      assert.strictEqual(snapshot(), before, 'upgrade must not modify templates or UPSTREAM_EVIDENCE.md');
+      assert.strictEqual(snapshot(), before, 'upgrade must not modify templates');
 
       run('uninstall');
       assert(!fs.existsSync(target), 'plugin dir should be removed');
@@ -654,7 +676,7 @@ const test = async (name, fn) => {
       return r;
     };
     const stub = (exitCode) => `require('fs').writeFileSync(${JSON.stringify(marker)}, JSON.stringify(process.argv.slice(2)));\nprocess.exit(${exitCode});\n`;
-    const upgrade = () => spawnSync(process.execPath, [path.join(clone, 'plugin', 'bin', 'cli.js'), 'upgrade', '--sync-upstream'], { cwd: clone, encoding: 'utf8', timeout: 60000, env });
+    const upgrade = () => spawnSync(process.execPath, [path.join(clone, 'plugin', 'bin', 'cli.js'), 'upgrade'], { cwd: clone, encoding: 'utf8', timeout: 60000, env });
     try {
       fs.mkdirSync(path.join(seed, 'plugin', 'bin'), { recursive: true });
       fs.copyFileSync(path.join(root, 'bin', 'cli.js'), path.join(seed, 'plugin', 'bin', 'cli.js'));
@@ -674,7 +696,7 @@ const test = async (name, fn) => {
       git(seed, 'push');
       let r = upgrade();
       assert.strictEqual(r.status, 0, r.stdout + r.stderr);
-      assert.deepStrictEqual(JSON.parse(fs.readFileSync(marker, 'utf8')), ['upgrade', '--no-pull', '--sync-upstream']);
+      assert.deepStrictEqual(JSON.parse(fs.readFileSync(marker, 'utf8')), ['upgrade', '--no-pull']);
 
       // A failing pulled CLI propagates its exit code.
       fs.rmSync(marker);
@@ -705,8 +727,9 @@ const test = async (name, fn) => {
     assert(help.stdout.includes('CraftSquad CLI') && help.stdout.includes('studio'));
     const cxHelp = spawnSync(process.execPath, [cli, 'cx', '--help'], { cwd: root, encoding: 'utf8' });
     assert.strictEqual(cxHelp.status, 0, cxHelp.stderr);
-    assert(cxHelp.stdout.includes('CraftSquad Codex Account Switcher'));
+    assert(cxHelp.stdout.includes('CraftSquad Account Switcher') && cxHelp.stdout.includes('cx claude'));
   });
 
+  fs.rmSync(cxSandbox, { recursive: true, force: true });
   console.log(`\n${passed} tests passed${process.exitCode ? ' (with failures)' : ''}`);
 })();

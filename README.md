@@ -103,33 +103,37 @@ In Antigravity, prompt the squad directly (e.g., *"Write the spec for this featu
 
 ## Local Management Tool (`tool/`)
 
-A zero-dependency local web dashboard and CLI for managing CraftSquad and Codex accounts.
-
-- **Web Studio (`http://localhost:4200`)**: View Claude/ChatGPT/Gemini auth and status, switch role engines/models in `squad.config.json`, and manage Codex accounts.
-- **Codex Multi-Account Switcher (`cx`)**: Save multiple `~/.codex/auth.json` logins, rotate accounts with 2-way token sync, and run diagnostics.
-
-### Using the Tool
-
-Start the Web Studio (`http://localhost:4200`):
+A zero-dependency local web Studio for managing Codex and Claude Code accounts and the squad's role-to-engine mapping. Accounts are identified by email; there are no aliases to invent.
 
 ```bash
-npm start                                    # From cloned repo
+npm start                                    # From cloned repo: http://localhost:4200
 npx --yes github:phongbm/craft-squad studio  # Without cloning
 craft-squad studio                           # If installed globally
 ```
 
-Use the Codex switcher CLI (`save`, `list`, `switch`, `rotate`, `sync`, `doctor`):
+- **Accounts tab**: add an account (browser sign-in), switch Codex's live login, choose which Claude account CraftSquad dispatch uses, remove accounts, run diagnostics.
+- **Squad roles tab**: pick engine, model, and reasoning effort per role (`squad.config.json`).
+- **Safe by default**: listens on `127.0.0.1` only, requires a per-session token, and never exposes tokens in the UI or API.
+
+**Codex** accounts are saved in `~/.craft-squad/codex-profiles/<email>/`. Switching copies the chosen account to `~/.codex/auth.json` (after saving and backing up the current login) and restarts the Codex daemon. **Claude Code** accounts each get their own `CLAUDE_CONFIG_DIR` in `~/.craft-squad/claude-profiles/<email>/`, so tokens are never copied; the account marked "In use" is the one squad dispatch runs Claude Code with.
+
+Prefer the terminal? The same actions are available through `cx` (select accounts by email, an email prefix, or list number):
 
 ```bash
-npm run cx -- save work          # Save current Codex login as "work"
-npm run codex:list               # List saved profiles and token expiry
-npm run cx -- switch work        # Switch active Codex profile (syncs tokens)
-npm run codex:rotate             # Rotate to next valid account
-npm run codex:sync               # Sync active auth.json back to its profile
-npm run codex:doctor             # Check Codex CLI and profile health
+npm run cx -- list                  # Codex accounts
+npm run cx -- add                   # Sign in a new Codex account
+npm run cx -- switch me@work.com    # Switch the live Codex login
+npm run cx -- claude list           # Claude Code accounts
+npm run cx -- claude add            # Sign in a new Claude account
+npm run cx -- claude use me@work.com
+npm run cx -- claude run me@work.com   # Start Claude Code as that account
 ```
 
-When installed globally or via `npx`, replace `npm run cx --` with `craft-squad cx` (e.g., `craft-squad cx list`, `craft-squad cx rotate`).
+When installed globally or via `npx`, replace `npm run cx --` with `craft-squad cx`. Use accounts you are entitled to (for example personal vs work); rotating accounts to evade rate limits may violate provider terms. On macOS, Claude credentials live in the Keychain: verify per-account isolation before relying on it.
+
+## Credits
+
+CraftSquad's spec-driven workflow is inspired by [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD) and [GitHub Spec-Kit](https://github.com/github/spec-kit) (both MIT). All templates and charters in this repo are original, concise rewrites.
 
 ## Verification
 
